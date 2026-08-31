@@ -1,0 +1,594 @@
+import { _decorator, Color, Component, Graphics, input, Input, EventKeyboard, KeyCode, Label, Node, resources, Sprite, SpriteFrame, tween, UITransform, Vec3 } from 'cc';
+import { ActorStats, FixedEncounterDef, SkillDef } from '../core/GameData';
+import { BeastsData } from '../data/BeastsData';
+import { SkillsData } from '../data/SkillsData';
+import { GameManager, GameState } from '../core/GameManager';
+import { EventBus, GEvent } from '../core/EventBus';
+import { UIFactory } from '../ui/UIFactory';
+import { PixelBeasts, BattleBgRenderer } from '../render/PixelBeasts';
+
+const { ccclass } = _decorator;
+
+/** 回合中的一条行动 */
+interface PendingAction {
+    actor: ActorStats;
+    isEnemy: boolean;
+    skill: SkillDef | null;
+    targets: ActorStats[];
+    text: string;
+}
+
+type Phase = 'off' | 'intro' | 'menu' | 'skillMenu' | 'target' | 'action' | 'victory' | 'defeat';
+
+/**
+ * 第一人称回合制战斗(DQ 式)
+ * 敌人立绘在上,指令菜单在下;回合内按速度排序依次行动
+ */
+@ccclass('BattleManager')
+export class BattleManager extends Component {
+    static inst: BattleManager;
+
+    phase: Phase = 'off';
+    enemies: ActorStats[] = [];
+    private party: ActorStats[] = [];
+    private actions: PendingAction[] = [];
+    private curActorIdx = 0;
+    private cmdIdx = 0;
+    private skillIdx = 0;
+    private targetIdx = 0;
+    private pendingSkill: SkillDef | null = null;
+    private encounter: FixedEncounterDef | null = null;
+    private bgTex = '';
+    private pendingActions: PendingAction[] = [];
+
+    // UI
+    private uiRoot: Node;
+    private enemyNodes: { node: Node; sprite: Sprite; hpBar: Graphics; nameLabel: Label }[] = [];
+    private panel: Node;
+    private msgLabel: Label;
+    private cmdButtons: Node[] = [];
+    private skillButtons: Node[] = [];
+    private targetBtns: Node[] = [];
+    private partyLabel: Label;
+
+    init(uiRoot: Node): void {
+        this.uiRoot = uiRoot;
+        this.node.layer = uiRoot.layer;
+        this.node.addComponent(UITransform).setContentSize(960, 600);
+        this.node.active = false;
+        input.on(Input.EventType.KEY_DOWN, this.onKeyDown, this);
+    }
+
+    get active(): boolean { return this.node.active; }
+
+    // ==================== 开始与结束 ====================
+
+    startBattle(beastIds: string[], bgTex: string, encounter: FixedEncounterDef | null = null): void {
+        const gm = GameManager.inst;
+        gm.setState(GameState.BATTLE);
+        this.encounter = encounter;
+        this.bgTex = bgTex;
+        this.enemies = beastIds.map(id => BeastsData.toActor(BeastsData.get(id)));
+        this.party = gm.getParty();
+        this.pendingActions = [];
+        this.curActorIdx = 0;
+        this.cmdIdx = 0;
+        this.skillIdx = 0;
+        this.targetIdx = 0;
+        this.pendingSkill = null;
+        this.buildUI();
+        this.node.active = true;
+        this.phase = 'intro';
+        const main = this.enemies[0];
+        const tab = (main.beastId && BeastsData.get(main.beastId).boss) ? 'BOSS ' : '';
+        this.setMsg(`${tab}${this.enemies.map(e => e.name).join('与')} 出现了!\n`);
+    }
+
+    private endBattle(win: boolean): void {
+        this.phase = 'off';
+        this.node.active = false;
+        this.clearUI();
+        const gm = GameManager.inst;
+        if (win && this.encounter?.winFlag) gm.addFlag(this.encounter.winFlag);
+        gm.save();
+        EventBus.emit(GEvent.BATTLE_END, { win });
+        EventBus.emit('battle:ended', { win, encounter: this.encounter });
+        gm.setState(GameState.EXPLORE);
+    }
+
+    // ==================== UI 构建 ====================
+
+    private buildUI(): void {
+        this.clearUI();
+
+        // 背景:先程序化绘制,加载贴图成功则替换
+        const bgNode = new Node('bg');
+        bgNode.layer = this.node.layer;
+        bgNode.addComponent(UITransform).setContentSize(960, 600);
+        this.node.addChild(bgNode);
+        const pixelBg = bgNode.addComponent(Graphics);
+        BattleBgRenderer.draw(pixelBg, this.bgTex);
+        resources.load(`textures/${this.bgTex}/spriteFrame`, SpriteFrame, (err, sf) => {
+            if (!err && bgNode.isValid) {
+                bgNode.addComponent(Sprite).spriteFrame = sf;
+                pixelBg.enabled = false;
+            }
+        });
+
+        // 敌人区
+        this.enemyNodes = [];
+        const n = this.enemies.length;
+        this.enemies.forEach((e, i) => {
+            const node = new Node(`enemy_${i}`);
+            node.layer = this.node.layer;
+            node.addComponent(UITransform).setContentSize(240, 240);
+            const x = n === 1 ? 0 : (i === 0 ? -170 : 170);
+            node.setPosition(x, 80, 0);
+            this.node.addChild(node);
+            const def = BeastsData.get(e.beastId!);
+            // 像素立绘(占位/保底)
+            const sprite = node.addComponent(Sprite);
+            sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+            const pixels = node.addComponent(Graphics);
+            PixelBeasts.draw(pixels, def.id, 220);
+            // 有美术贴图时自动替换
+            resources.load(`textures/${def.tex}/spriteFrame`, SpriteFrame, (err2, sf) => {
+                if (!err2 && node.isValid) {
+                    sprite.spriteFrame = sf;
+                    pixels.enabled = false;
+                }
+            });
+            const nameLabel = UIFactory.label(this.node, def.name, 20, new Vec3(x, 215), new Color(255, 230, 140, 255), { bold: true, outline: true });
+            const hpBar = new Node('hp');
+            hpBar.layer = this.node.layer;
+            hpBar.addComponent(UITransform).setContentSize(160, 8);
+            hpBar.setPosition(x, 190, 0);
+            this.node.addChild(hpBar);
+            this.enemyNodes.push({ node, sprite, hpBar: hpBar.addComponent(Graphics), nameLabel });
+        });
+
+        // 底部窗口
+        this.panel = UIFactory.panel(this.node, 0, -205, 920, 190);
+        this.msgLabel = UIFactory.label(this.panel, '', 20, new Vec3(0, 62), undefined, { anchorX: 0, anchorY: 1 });
+        this.msgLabel.horizontalAlign = Label.HorizontalAlign.LEFT;
+        this.msgLabel.verticalAlign = Label.VerticalAlign.TOP;
+        (this.msgLabel.node.getComponent(UITransform)!).setContentSize(880, 90);
+        this.partyLabel = UIFactory.label(this.node, '', 17, new Vec3(-420, 84), new Color(210, 230, 210, 255), { anchorX: 0, anchorY: 1 });
+        (this.partyLabel.node.getComponent(UITransform)!).setContentSize(880, 70);
+
+        // 指令菜单
+        this.cmdButtons = [];
+        const cmds = ['攻击', '技能', '收服', '防御', '逃跑'];
+        cmds.forEach((c, i) => {
+            const btn = UIFactory.button(this.panel, c, -340 + i * 170, -14, 155, 52, 20);
+            this.cmdButtons.push(btn);
+        });
+        this.paintAll();
+        this.refreshPartyLabel();
+    }
+
+    private clearUI(): void {
+        this.enemyNodes = [];
+        this.cmdButtons = [];
+        this.skillButtons = [];
+        this.targetBtns = [];
+        this.node.destroyAllChildren();
+    }
+
+    /** 刷新全部按钮选中态 */
+    private paintAll(): void {
+        this.cmdButtons.forEach((btn, i) => {
+            const g = btn.getComponent(Graphics);
+            UIFactory.paintButton(g, 155, 52, this.phase === 'menu' && i === this.cmdIdx);
+        });
+        this.skillButtons.forEach((btn, i) => {
+            const g = btn.getComponent(Graphics);
+            UIFactory.paintButton(g, 300, 40, this.phase === 'skillMenu' && i === this.skillIdx);
+        });
+        this.targetBtns.forEach((btn, i) => {
+            const g = btn.getComponent(Graphics);
+            UIFactory.paintButton(g, 120, 40, this.phase === 'target' && i === this.targetIdx);
+        });
+    }
+
+    private setMsg(text: string): void {
+        if (this.msgLabel) this.msgLabel.string = text;
+    }
+
+    private refreshPartyLabel(): void {
+        if (!this.partyLabel) return;
+        const parts = this.party.map(a =>
+            `${a.name} Lv.${a.level}  HP ${Math.max(0, a.hp)}/${a.maxHp}  MP ${Math.max(0, a.mp)}/${a.maxMp}`
+        );
+        this.partyLabel.string = parts.join('    ');
+    }
+
+    private refreshEnemyHp(): void {
+        const living = this.enemies.filter(e => e.hp > 0).length;
+        let idx = 0;
+        this.enemies.forEach((e, i) => {
+            const en = this.enemyNodes[i];
+            if (!en || !en.hpBar) return;
+            const g = en.hpBar;
+            g.clear();
+            if (e.hp <= 0) return;
+            const w = 160;
+            const ratio = Math.max(0, Math.min(1, e.hp / e.maxHp));
+            g.fillColor = new Color(40, 30, 40, 230);
+            g.rect(-w / 2 - 2, -5, w + 4, 10);
+            g.fill();
+            g.fillColor = ratio > 0.5 ? new Color(80, 200, 90, 255) : ratio > 0.25 ? new Color(230, 180, 60, 255) : new Color(225, 70, 60, 255);
+            g.rect(-w / 2, -4, w * ratio, 8);
+            g.fill();
+            idx++;
+        });
+    }
+
+    // ==================== 输入 ====================
+
+    private onKeyDown(event: EventKeyboard): void {
+        if (!this.node.active) return;
+        const code = event.keyCode;
+        const confirm = code === KeyCode.ENTER || code === KeyCode.SPACE || code === KeyCode.KEY_Z;
+        const cancel = code === KeyCode.KEY_X || code === KeyCode.ESCAPE;
+
+        switch (this.phase) {
+            case 'intro':
+                if (confirm) this.openMenu();
+                break;
+            case 'menu':
+                if (code === KeyCode.ARROW_LEFT) { this.cmdIdx = (this.cmdIdx + 4) % 5; this.paintAll(); }
+                else if (code === KeyCode.ARROW_RIGHT) { this.cmdIdx = (this.cmdIdx + 1) % 5; this.paintAll(); }
+                else if (confirm) this.onCmdConfirm();
+                break;
+            case 'skillMenu':
+                if (code === KeyCode.ARROW_UP) { this.skillIdx = (this.skillIdx + this.skillButtons.length - 1) % this.skillButtons.length; this.paintAll(); }
+                else if (code === KeyCode.ARROW_DOWN) { this.skillIdx = (this.skillIdx + 1) % this.skillButtons.length; this.paintAll(); }
+                else if (confirm) this.onSkillConfirm();
+                else if (cancel) { this.phase = 'menu'; this.closeSkillMenu(); this.paintAll(); }
+                break;
+            case 'target':
+                if (code === KeyCode.ARROW_LEFT || code === KeyCode.ARROW_RIGHT) { this.targetIdx = (this.targetIdx + 1) % this.targetBtns.length; this.paintAll(); }
+                else if (confirm) this.onTargetConfirm();
+                else if (cancel) { this.phase = 'menu'; this.closeTargetMenu(); this.paintAll(); }
+                break;
+            case 'victory':
+            case 'defeat':
+                if (confirm) this.endBattle(this.phase === 'victory');
+                break;
+        }
+    }
+
+    // ==================== 指令处理 ====================
+
+    private openMenu(): void {
+        this.phase = 'menu';
+        this.curActorIdx = 0;
+        this.pendingActions = [];
+        this.refreshPartyLabel();
+        this.setMsg(`${this.party[0].name} 的回合,请选择指令。`);
+        this.paintAll();
+    }
+
+    private onCmdConfirm(): void {
+        const actor = this.party[this.curActorIdx];
+        switch (this.cmdIdx) {
+            case 0: { // 攻击
+                const living = this.enemies.filter(e => e.hp > 0);
+                if (living.length === 1) {
+                    this.pushAction(actor, null, living[0]);
+                    this.nextActor();
+                } else {
+                    this.pendingSkill = null;
+                    this.openTargetMenu();
+                }
+                break;
+            }
+            case 1: // 技能
+                this.openSkillMenu();
+                break;
+            case 2: // 收服
+                this.tryCatch(actor);
+                break;
+            case 3: // 防御
+                this.pendingActions.push({ actor, isEnemy: false, skill: null, targets: [], text: `${actor.name} 进入防御姿态!` });
+                this.nextActor();
+                break;
+            case 4: // 逃跑
+                this.tryRun();
+                break;
+        }
+    }
+
+    private pushAction(actor: ActorStats, skill: SkillDef | null, specific?: ActorStats): void {
+        const living = this.enemies.filter(e => e.hp > 0);
+        if (!skill) {
+            // 普攻(可选指定目标)
+            const t = specific && specific.hp > 0 ? [specific] : [living[0]];
+            this.pendingActions.push({ actor, isEnemy: false, skill: null, targets: t, text: `${actor.name} 的攻击!` });
+        } else if (skill.target === 'allEnemies') {
+            this.pendingActions.push({ actor, isEnemy: false, skill, targets: living, text: `${actor.name} 使出「${skill.name}」!` });
+        } else if (skill.target === 'enemy') {
+            this.pendingActions.push({ actor, isEnemy: false, skill, targets: [living[0]], text: `${actor.name} 使出「${skill.name}」!` });
+        } else {
+            // 治疗自己
+            this.pendingActions.push({ actor, isEnemy: false, skill, targets: [actor], text: `${actor.name} 使出「${skill.name}」!` });
+        }
+    }
+
+    private nextActor(): void {
+        this.curActorIdx++;
+        if (this.curActorIdx < this.party.length) {
+            this.setMsg(`${this.party[this.curActorIdx].name} 的回合,请选择指令。`);
+            this.paintAll();
+        } else {
+            this.beginRound();
+        }
+    }
+
+    private openSkillMenu(): void {
+        const actor = this.party[this.curActorIdx];
+        const skills = actor.skills.map(id => SkillsData.get(id));
+        if (skills.length === 0) {
+            this.setMsg(`${actor.name} 不会任何技能!`);
+            return;
+        }
+        this.phase = 'skillMenu';
+        this.skillIdx = 0;
+        this.skillButtons = [];
+        skills.forEach((s, i) => {
+            const y = 40 - i * 46;
+            const btn = UIFactory.button(this.panel, `${s.name}(${s.mpCost}MP)`, 130, y, 300, 40, 16);
+            this.skillButtons.push(btn);
+        });
+        this.paintAll();
+    }
+
+    private closeSkillMenu(): void {
+        this.skillButtons.forEach(b => b.destroy());
+        this.skillButtons = [];
+    }
+
+    private onSkillConfirm(): void {
+        const actor = this.party[this.curActorIdx];
+        const skill = SkillsData.get(actor.skills[this.skillIdx]);
+        this.pendingSkill = skill;
+        if (actor.mp < skill.mpCost) {
+            this.setMsg('MP 不足!');
+            return;
+        }
+        this.closeSkillMenu();
+        if (skill.target === 'enemy') {
+            this.openTargetMenu();
+        } else if (skill.target === 'allEnemies') {
+            // 无需选择
+            this.pushAction(actor, skill);
+            this.nextActor();
+        } else {
+            this.pushAction(actor, skill);
+            this.nextActor();
+        }
+    }
+
+    private openTargetMenu(): void {
+        this.phase = 'target';
+        this.targetIdx = 0;
+        this.targetBtns = [];
+        this.enemies.forEach((e, i) => {
+            if (e.hp <= 0) return;
+            const btn = UIFactory.button(this.panel, e.name, -220 + i * 150, 40, 120, 40, 14);
+            this.targetBtns.push(btn);
+        });
+        this.setMsg(`选择目标:`);
+        this.paintAll();
+    }
+
+    private closeTargetMenu(): void {
+        this.targetBtns.forEach(b => b.destroy());
+        this.targetBtns = [];
+    }
+
+    private onTargetConfirm(): void {
+        const actor = this.party[this.curActorIdx];
+        const living = this.enemies.filter(e => e.hp > 0);
+        const target = living[this.targetIdx];
+        if (!target) {
+            this.closeTargetMenu();
+            this.phase = 'menu';
+            this.paintAll();
+            return;
+        }
+        this.closeTargetMenu();
+        if (this.pendingSkill) {
+            this.pendingActions.push({
+                actor, isEnemy: false, skill: this.pendingSkill,
+                targets: [target],
+                text: `${actor.name} 使出「${this.pendingSkill.name}」!`,
+            });
+            this.pendingSkill = null;
+        } else {
+            this.pendingActions.push({
+                actor, isEnemy: false, skill: null,
+                targets: [target],
+                text: `${actor.name} 的攻击!`,
+            });
+        }
+        this.nextActor();
+    }
+
+    private tryCatch(actor: ActorStats): void {
+        const living = this.enemies.filter(e => e.hp > 0 && BeastsData.get(e.beastId!).catchable);
+        if (living.length === 0 || !GameManager.inst.hasFlag('got_book')) {
+            this.setMsg('没有可以收服的异兽!');
+            return;
+        }
+        const target = living[0];
+        if (target.hp > target.maxHp * 0.3) {
+            this.setMsg(`${target.name} 精神还很充沛,无法收服!`);
+            return;
+        }
+        const rate = 0.65;
+        if (Math.random() < rate) {
+            GameManager.inst.catchBeast(target.beastId!);
+            target.hp = 0;
+            this.setMsg(`${target.name} 被收服了!`);
+            this.refreshPartyLabel();
+            this.fadeEnemy(target);
+        } else {
+            this.setMsg(`${target.name} 挣脱了!`);
+        }
+        this.nextActor();
+    }
+
+    private tryRun(): void {
+        const bossFight = this.enemies.some(e => e.beastId && BeastsData.get(e.beastId).boss);
+        if (bossFight) {
+            this.setMsg('山崩地裂,无处可逃!');
+            this.nextActor();
+            return;
+        }
+        if (Math.random() < 0.8) {
+            this.setMsg('成功逃离了战斗!');
+            this.endBattle(false);
+        } else {
+            this.setMsg('逃跑失败!');
+            this.nextActor();
+        }
+    }
+
+    private fadeEnemy(enemy: ActorStats): void {
+        const idx = this.enemies.indexOf(enemy);
+        const en = this.enemyNodes[idx];
+        if (en) {
+            tween(en.node).to(0.4, { scale: new Vec3(0.1, 0.1, 1) }).start();
+            tween(en.nameLabel.node).to(0.3, { scale: new Vec3(0.1, 0.1, 1) }).start();
+        }
+        this.refreshEnemyHp();
+    }
+
+    // ==================== 回合执行 ====================
+
+    private async beginRound(): Promise<void> {
+        this.phase = 'action';
+        // 敌人行动
+        const enemyActions = this.enemies
+            .filter(e => e.hp > 0)
+            .map(e => this.enemyAI(e));
+        this.pendingActions = [...this.pendingActions, ...enemyActions].sort((a, b) => b.actor.spd - a.actor.spd);
+
+        for (const act of this.pendingActions) {
+            if (this.enemies.every(e => e.hp <= 0) || this.party.every(p => p.hp <= 0)) break;
+            if (act.actor.hp <= 0) continue;
+            await this.playAction(act);
+            await sleep(450);
+        }
+        this.pendingActions = [];
+
+        // 结算
+        if (this.enemies.every(e => e.hp <= 0)) {
+            this.onVictory();
+        } else if (this.party.every(p => p.hp <= 0)) {
+            this.onDefeat();
+        } else {
+            this.openMenu();
+        }
+    }
+
+    private enemyAI(actor: ActorStats): PendingAction {
+        const living = this.party.filter(p => p.hp > 0);
+        const targets = [living[Math.floor(Math.random() * living.length)]];
+        const skills = actor.skills.filter(id => {
+            const s = SkillsData.get(id);
+            return actor.mp >= s.mpCost;
+        });
+        if (skills.length > 0 && Math.random() < 0.45) {
+            const skill = SkillsData.get(skills[Math.floor(Math.random() * skills.length)]);
+            const t = skill.target === 'allEnemies' ? living : targets;
+            actor.mp -= skill.mpCost;
+            return { actor, isEnemy: true, skill, targets: t, text: `${actor.name} 发出「${skill.name}」!` };
+        }
+        return { actor, isEnemy: true, skill: null, targets, text: `${actor.name} 的攻击!` };
+    }
+
+    private async playAction(act: PendingAction): Promise<void> {
+        this.setMsg(act.text);
+        await sleep(500);
+
+        for (const target of act.targets) {
+            if (target.hp <= 0) continue;
+            let amount = 0;
+            let isHeal = false;
+            if (act.skill) {
+                const s = act.skill;
+                if (s.type === 'heal') {
+                    isHeal = true;
+                    amount = Math.floor(s.power * (0.9 + Math.random() * 0.2));
+                    target.hp = Math.min(target.maxHp, target.hp + amount);
+                } else if (s.type === 'magic') {
+                    amount = Math.max(1, Math.floor(act.actor.atk * s.power * (0.85 + Math.random() * 0.3) - target.def * 0.4));
+                    target.hp = Math.max(0, target.hp - amount);
+                } else {
+                    amount = Math.max(1, Math.floor(act.actor.atk * s.power - target.def));
+                    target.hp = Math.max(0, target.hp - amount);
+                }
+                act.actor.mp = Math.max(0, act.actor.mp - s.mpCost);
+            } else {
+                // 普攻
+                amount = Math.max(1, Math.floor(act.actor.atk * 2 - target.def) + Math.floor(Math.random() * 3));
+                target.hp = Math.max(0, target.hp - amount);
+            }
+
+            // 伤害/治疗数字
+            const color = isHeal ? new Color(120, 240, 140, 255) : new Color(255, 220, 90, 255);
+            const prefix = isHeal ? '+' : '-';
+            const label = UIFactory.label(this.node, `${prefix}${amount}`, 26, new Vec3(0, 40), color, { bold: true, outline: true });
+            tween(label.node)
+                .by(0.8, { position: new Vec3(0, 40) })
+                .call(() => label.node.destroy())
+                .start();
+
+            if (target.hp <= 0) {
+                this.setMsg(`${target.name} 倒下了!`);
+                if (act.isEnemy) {
+                    // 我方倒下:提示
+                } else {
+                    this.fadeEnemy(target);
+                }
+            } else {
+                // 受击 shake
+                const enIdx = this.enemies.indexOf(target);
+                if (enIdx >= 0 && !act.isEnemy) {
+                    const node = this.enemyNodes[enIdx].node;
+                    tween(node)
+                        .to(0.05, { position: new Vec3(node.position.x + 8, 80) })
+                        .to(0.05, { position: new Vec3(node.position.x - 8, 80) })
+                        .to(0.05, { position: new Vec3(node.position.x, 80) })
+                        .start();
+                }
+            }
+            await sleep(600);
+        }
+        this.refreshEnemyHp();
+        this.refreshPartyLabel();
+    }
+
+    private onVictory(): void {
+        this.phase = 'victory';
+        const gm = GameManager.inst;
+        const exp = this.enemies.reduce((s, e) => s + BeastsData.get(e.beastId!).exp, 0);
+        const gold = this.enemies.reduce((s, e) => s + BeastsData.get(e.beastId!).gold, 0);
+        gm.gainExp(exp);
+        gm.addGold(gold);
+        this.enemies.forEach(e => gm.addToDex(e.beastId!));
+        this.setMsg(`胜利!获得经验 ${exp}、金钱 ${gold}!\n${this.party[0].name} 当前经验 ${gm.player.exp}/${gm.player.nextExp}。按 Z 继续。`);
+    }
+
+    private onDefeat(): void {
+        this.phase = 'defeat';
+        this.setMsg('我方全员倒下……被送回了家中。按 Z 继续。');
+    }
+}
+
+function sleep(ms: number): Promise<void> {
+    return new Promise(res => setTimeout(res, ms));
+}
