@@ -6,3 +6,5 @@ profiles/
 native/
 node_modules/
 .DS_Store
+# git worktree（kanban 任务临时工作区）
+.worktrees/

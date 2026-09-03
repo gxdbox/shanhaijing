@@ -1,0 +1,12 @@
+{
+  "platform": "web-mobile",
+  "debug": true,
+  "md5Cache": false,
+  "startScene": "8cb9d144-29c2-6bc8-b729-d851480148ab",
+  "scenes": [
+    {
+      "url": "db://assets/scenes/main.scene",
+      "uuid": "8cb9d144-29c2-6bc8-b729-d851480148ab"
+    }
+  ]
+}

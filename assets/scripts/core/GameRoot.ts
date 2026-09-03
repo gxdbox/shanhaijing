@@ -5,7 +5,7 @@ import {
 import { GameManager, GameState } from './GameManager';
 import { EventBus, GEvent } from './EventBus';
 import { SaveManager } from './SaveManager';
-import { MapView, TILE } from '../map/MapView';
+import { MapView, TILE, CAMERA_Z } from '../map/MapView';
 import { PlayerController } from '../map/PlayerController';
 import { HUD } from '../ui/HUD';
 import { DialogueUI } from '../ui/DialogueUI';
@@ -77,6 +77,7 @@ export class GameRoot extends Component {
         // 世界相机(渲染 DEFAULT 层,跟随玩家)
         const wNode = new Node('WorldCamera');
         wNode.layer = Layers.Enum.UI_2D;
+        wNode.setPosition(0, 0, CAMERA_Z);
         canvasNode.addChild(wNode);
         const wCam = wNode.addComponent(Camera);
         wCam.projection = Camera.ProjectionType.ORTHO;
@@ -84,18 +85,23 @@ export class GameRoot extends Component {
         wCam.visibility = Layers.Enum.DEFAULT;
         wCam.clearFlags = Camera.ClearFlag.SOLID_COLOR;
         wCam.clearColor = new Color(12, 14, 24, 255);
+        wCam.near = 1;
+        wCam.far = 2000;
         wCam.orthoHeight = 300;
         this.worldCam = wCam;
 
         // UI 相机(渲染 UI_2D 层)
         const uNode = new Node('UICamera');
         uNode.layer = Layers.Enum.UI_2D;
+        uNode.setPosition(0, 0, CAMERA_Z);
         canvasNode.addChild(uNode);
         const uCam = uNode.addComponent(Camera);
         uCam.projection = Camera.ProjectionType.ORTHO;
         uCam.priority = 10;
         uCam.visibility = Layers.Enum.UI_2D;
         uCam.clearFlags = Camera.ClearFlag.DEPTH_ONLY;
+        uCam.near = 1;
+        uCam.far = 2000;
         uCam.orthoHeight = 300;
         canvas.cameraComponent = uCam;
     }

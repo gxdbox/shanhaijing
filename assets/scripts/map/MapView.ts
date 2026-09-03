@@ -7,6 +7,9 @@ const { ccclass } = _decorator;
 
 export const TILE = 32;
 
+/** 相机放在 Z=1000 处俯视 Z=0 的世界/UI(近裁面 1、远裁面 2000 内) */
+export const CAMERA_Z = 1000;
+
 /**
  * 地图视图:程序化绘制瓦片地图(像素风),管理 NPC 节点与摄像机跟随
  * 坐标:grid (gx, gy) 左上为原点;世界像素:地图中心 (0,0)
@@ -272,7 +275,7 @@ export class MapView extends Component {
         const viewH = 600;
         const cx = pw > viewW ? Math.max(-(pw - viewW) / 2, Math.min((pw - viewW) / 2, p.x)) : 0;
         const cy = ph > viewH ? Math.max(-(ph - viewH) / 2, Math.min((ph - viewH) / 2, p.y)) : 0;
-        this.cameraNode.setPosition(cx, cy, 0);
+        this.cameraNode.setPosition(cx, cy, CAMERA_Z);
     }
 
     onLoad(): void {
