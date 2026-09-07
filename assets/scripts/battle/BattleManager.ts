@@ -44,6 +44,7 @@ export class BattleManager extends Component {
     // UI
     private uiRoot: Node;
     private enemyNodes: { node: Node; sprite: Sprite; hpBar: Graphics; nameLabel: Label }[] = [];
+    private partyNodes: { node: Node; hpBar: Graphics; nameLabel: Label }[] = [];
     private panel: Node;
     private msgLabel: Label;
     private cmdButtons: Node[] = [];
@@ -115,52 +116,81 @@ export class BattleManager extends Component {
             }
         });
 
-        // 敌人区
+        // 敌人区(右侧)
         this.enemyNodes = [];
         const n = this.enemies.length;
         this.enemies.forEach((e, i) => {
             const node = new Node(`enemy_${i}`);
             node.layer = this.node.layer;
-            node.addComponent(UITransform).setContentSize(240, 240);
-            const x = n === 1 ? 0 : (i === 0 ? -170 : 170);
-            node.setPosition(x, 80, 0);
+            node.addComponent(UITransform).setContentSize(160, 160);
+            const ex = 220;
+            const ey = n === 1 ? 60 : (140 - i * 130);
+            node.setPosition(ex, ey, 0);
             this.node.addChild(node);
             const def = BeastsData.get(e.beastId!);
-            // 像素立绘(占位/保底)
             const sprite = node.addComponent(Sprite);
             sprite.sizeMode = Sprite.SizeMode.CUSTOM;
             const pixels = node.addComponent(Graphics);
-            PixelBeasts.draw(pixels, def.id, 220);
-            // 有美术贴图时自动替换
+            PixelBeasts.draw(pixels, def.id, 140);
             resources.load(`textures/${def.tex}/spriteFrame`, SpriteFrame, (err2, sf) => {
                 if (!err2 && node.isValid) {
                     sprite.spriteFrame = sf;
                     pixels.enabled = false;
                 }
             });
-            const nameLabel = UIFactory.label(this.node, def.name, 20, new Vec3(x, 215), new Color(255, 230, 140, 255), { bold: true, outline: true });
+            const nameLabel = UIFactory.label(this.node, def.name, 16, new Vec3(ex, ey + 85), new Color(255, 230, 140, 255), { bold: true, outline: true });
             const hpBar = new Node('hp');
             hpBar.layer = this.node.layer;
-            hpBar.addComponent(UITransform).setContentSize(160, 8);
-            hpBar.setPosition(x, 190, 0);
+            hpBar.addComponent(UITransform).setContentSize(120, 8);
+            hpBar.setPosition(ex, ey + 68, 0);
             this.node.addChild(hpBar);
             this.enemyNodes.push({ node, sprite, hpBar: hpBar.addComponent(Graphics), nameLabel });
         });
 
+        // ── 我方区域(左侧) ──
+        this.partyNodes = [];
+        const pn = this.party.length;
+        this.party.forEach((member, i) => {
+            const node = new Node(`party_${i}`);
+            node.layer = this.node.layer;
+            node.addComponent(UITransform).setContentSize(100, 100);
+            const px = -240;
+            const py = pn === 1 ? 40 : (130 - i * 120);
+            node.setPosition(px, py, 0);
+            this.node.addChild(node);
+            const pixels = node.addComponent(Graphics);
+            if (member.beastId) {
+                PixelBeasts.draw(pixels, member.beastId, 90);
+            } else {
+                BattleManager.drawPlayerBack(pixels);
+            }
+            // 名字
+            const nameLabel = UIFactory.label(this.node, member.name, 14, new Vec3(px, py - 60), new Color(200, 240, 200, 255), { outline: true });
+            // HP 条
+            const hpNode = new Node('php');
+            hpNode.layer = this.node.layer;
+            hpNode.addComponent(UITransform).setContentSize(90, 8);
+            hpNode.setPosition(px, py - 75, 0);
+            this.node.addChild(hpNode);
+            const hpBar = hpNode.addComponent(Graphics);
+            this.partyNodes.push({ node, hpBar, nameLabel });
+        });
+        this.refreshPartyHp();
+
         // 底部窗口
-        this.panel = UIFactory.panel(this.node, 0, -205, 920, 190);
-        this.msgLabel = UIFactory.label(this.panel, '', 20, new Vec3(0, 62), undefined, { anchorX: 0, anchorY: 1 });
+        this.panel = UIFactory.panel(this.node, 0, -220, 920, 155);
+        this.msgLabel = UIFactory.label(this.panel, '', 18, new Vec3(0, 50), undefined, { anchorX: 0, anchorY: 1 });
         this.msgLabel.horizontalAlign = Label.HorizontalAlign.LEFT;
         this.msgLabel.verticalAlign = Label.VerticalAlign.TOP;
-        (this.msgLabel.node.getComponent(UITransform)!).setContentSize(880, 90);
-        this.partyLabel = UIFactory.label(this.node, '', 17, new Vec3(-420, 84), new Color(210, 230, 210, 255), { anchorX: 0, anchorY: 1 });
-        (this.partyLabel.node.getComponent(UITransform)!).setContentSize(880, 70);
+        (this.msgLabel.node.getComponent(UITransform)!).setContentSize(880, 65);
+        this.partyLabel = UIFactory.label(this.node, '', 15, new Vec3(-420, -130), new Color(210, 230, 210, 255), { anchorX: 0, anchorY: 1 });
+        (this.partyLabel.node.getComponent(UITransform)!).setContentSize(880, 50);
 
         // 指令菜单
         this.cmdButtons = [];
         const cmds = ['攻击', '技能', '收服', '防御', '逃跑'];
         cmds.forEach((c, i) => {
-            const btn = UIFactory.button(this.panel, c, -340 + i * 170, -14, 155, 52, 20);
+            const btn = UIFactory.button(this.panel, c, -340 + i * 170, -30, 155, 48, 18);
             this.cmdButtons.push(btn);
         });
         this.paintAll();
@@ -169,6 +199,7 @@ export class BattleManager extends Component {
 
     private clearUI(): void {
         this.enemyNodes = [];
+        this.partyNodes = [];
         this.cmdButtons = [];
         this.skillButtons = [];
         this.targetBtns = [];
@@ -179,7 +210,7 @@ export class BattleManager extends Component {
     private paintAll(): void {
         this.cmdButtons.forEach((btn, i) => {
             const g = btn.getComponent(Graphics);
-            UIFactory.paintButton(g, 155, 52, this.phase === 'menu' && i === this.cmdIdx);
+            UIFactory.paintButton(g, 155, 48, this.phase === 'menu' && i === this.cmdIdx);
         });
         this.skillButtons.forEach((btn, i) => {
             const g = btn.getComponent(Graphics);
@@ -201,6 +232,69 @@ export class BattleManager extends Component {
             `${a.name} Lv.${a.level}  HP ${Math.max(0, a.hp)}/${a.maxHp}  MP ${Math.max(0, a.mp)}/${a.maxMp}`
         );
         this.partyLabel.string = parts.join('    ');
+        this.refreshPartyHp();
+    }
+
+    /** 刷新我方像素 HP 条 */
+    private refreshPartyHp(): void {
+        this.party.forEach((member, i) => {
+            const pn = this.partyNodes[i];
+            if (!pn) return;
+            const g = pn.hpBar;
+            g.clear();
+            const w = 100;
+            if (member.hp <= 0) {
+                // 倒下:灰条
+                g.fillColor = new Color(60, 50, 50, 200);
+                g.rect(-w / 2, -3, w, 6);
+                g.fill();
+                return;
+            }
+            const ratio = Math.max(0, Math.min(1, member.hp / member.maxHp));
+            g.fillColor = new Color(30, 28, 38, 220);
+            g.rect(-w / 2 - 1, -4, w + 2, 8);
+            g.fill();
+            g.fillColor = ratio > 0.5 ? new Color(80, 200, 90, 255) : ratio > 0.25 ? new Color(230, 180, 60, 255) : new Color(225, 70, 60, 255);
+            g.rect(-w / 2, -3, w * ratio, 6);
+            g.fill();
+        });
+    }
+
+    /** 主角(阿玄)战斗背面像素立绘 */
+    private static drawPlayerBack(g: Graphics): void {
+        const u = 100 / 24;
+        g.clear();
+        // 头发(背面全黑发)
+        g.fillColor = new Color(34, 26, 22, 255);
+        g.rect(-7 * u, 2 * u, 14 * u, 10 * u);
+        g.fill();
+        // 耳
+        g.fillColor = new Color(240, 216, 178, 255);
+        g.rect(-8 * u, 3 * u, 2 * u, 3 * u);
+        g.rect(6 * u, 3 * u, 2 * u, 3 * u);
+        g.fill();
+        // 身体(青衫背面)
+        g.fillColor = new Color(52, 96, 128, 255);
+        g.rect(-6 * u, -10 * u, 12 * u, 13 * u);
+        g.fill();
+        // 背部中线(衣缝)
+        g.fillColor = new Color(40, 78, 106, 255);
+        g.rect(-1 * u, -9 * u, 2 * u, 11 * u);
+        g.fill();
+        // 腰带
+        g.fillColor = new Color(140, 106, 44, 255);
+        g.rect(-6 * u, -4 * u, 12 * u, 2 * u);
+        g.fill();
+        // 腿
+        g.fillColor = new Color(66, 52, 40, 255);
+        g.rect(-5 * u, -14 * u, 4 * u, 5 * u);
+        g.rect(1 * u, -14 * u, 4 * u, 5 * u);
+        g.fill();
+        // 草鞋
+        g.fillColor = new Color(120, 96, 56, 255);
+        g.rect(-6 * u, -15 * u, 5 * u, 2 * u);
+        g.rect(1 * u, -15 * u, 5 * u, 2 * u);
+        g.fill();
     }
 
     private refreshEnemyHp(): void {
@@ -555,14 +649,16 @@ export class BattleManager extends Component {
                     this.fadeEnemy(target);
                 }
             } else {
-                // 受击 shake
+                // 受击 shake(水平抖动)
                 const enIdx = this.enemies.indexOf(target);
                 if (enIdx >= 0 && !act.isEnemy) {
                     const node = this.enemyNodes[enIdx].node;
+                    const origX = node.position.x;
+                    const origY = node.position.y;
                     tween(node)
-                        .to(0.05, { position: new Vec3(node.position.x + 8, 80) })
-                        .to(0.05, { position: new Vec3(node.position.x - 8, 80) })
-                        .to(0.05, { position: new Vec3(node.position.x, 80) })
+                        .to(0.05, { position: new Vec3(origX + 10, origY) })
+                        .to(0.05, { position: new Vec3(origX - 10, origY) })
+                        .to(0.05, { position: new Vec3(origX, origY) })
                         .start();
                 }
             }

@@ -103,7 +103,7 @@ export class MapsData {
         encounters: [
             { x: 13, y: 16, beastIds: ['zhi'], once: true },
         ],
-        encounterRate: 0.12,
+        encounterRate: 0.015,
         pool: ['zhi', 'xuangui', 'huanshu'],
         bgTex: 'battle/field',
     };
@@ -136,7 +136,7 @@ export class MapsData {
             { x: 14, y: 7, beastIds: ['yinglong'], once: true, winFlag: 'yinglong_down' },
             { x: 8, y: 3, beastIds: ['qiongqi'], once: true, winFlag: 'qiongqi_down' },
         ],
-        encounterRate: 0.14,
+        encounterRate: 0.02,
         pool: ['xuangui', 'huanshu'],
         bgTex: 'battle/cave',
     };

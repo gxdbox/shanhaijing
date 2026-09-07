@@ -27,8 +27,10 @@ export class GameRoot extends Component {
     private player: PlayerController;
     private codex: CodexUI;
     private dialogue: DialogueUI;
+    private lastDialogEnd = 0;  // 防止对话结束后同帧重新触发
     private battle: BattleManager;
     private worldCam: Camera;
+    private canvasNode: Node;
 
     onLoad(): void {
         this.gm = new GameManager();
@@ -103,6 +105,7 @@ export class GameRoot extends Component {
         uCam.near = 1;
         uCam.far = 2000;
         uCam.orthoHeight = 300;
+        this.canvasNode = canvasNode;
         canvas.cameraComponent = uCam;
     }
 
@@ -110,7 +113,7 @@ export class GameRoot extends Component {
         const worldRoot = new Node('WorldRoot');
         worldRoot.layer = Layers.Enum.DEFAULT;
         worldRoot.addComponent(UITransform);
-        this.node.scene.addChild(worldRoot);
+        this.canvasNode.addChild(worldRoot);
 
         this.mapView = worldRoot.addComponent(MapView);
         this.mapView.cameraNode = this.worldCam.node;
@@ -129,7 +132,7 @@ export class GameRoot extends Component {
         const uiRoot = new Node('UIRoot');
         uiRoot.layer = Layers.Enum.UI_2D;
         uiRoot.addComponent(UITransform).setContentSize(960, 600);
-        this.node.scene.addChild(uiRoot);
+        this.canvasNode.addChild(uiRoot);
 
         const hudNode = new Node('HUD');
         hudNode.layer = Layers.Enum.UI_2D;
@@ -193,6 +196,10 @@ export class GameRoot extends Component {
                 this.gm.setState(GameState.EXPLORE);
             }
         }, this);
+
+        EventBus.on(GEvent.DIALOG_END, () => {
+            this.lastDialogEnd = Date.now();
+        }, this);
     }
 
     private curBattleBg(): string {
@@ -234,6 +241,11 @@ export class GameRoot extends Component {
     }
 
     private onKeyDown(event: EventKeyboard): void {
+        // Shift 冲刺
+        if (event.keyCode === KeyCode.SHIFT_LEFT || event.keyCode === KeyCode.SHIFT_RIGHT) {
+            this.player.setSprint(true);
+            return;
+        }
         const dir = this.keyToDir(event.keyCode);
         if (dir) {
             this.player.setHold(dir);
@@ -244,7 +256,7 @@ export class GameRoot extends Component {
         const confirm = code === KeyCode.ENTER || code === KeyCode.SPACE || code === KeyCode.KEY_Z;
 
         if (this.gm.state === GameState.EXPLORE) {
-            if (confirm) this.player.pressInteract();
+            if (confirm && Date.now() - this.lastDialogEnd > 350) this.player.pressInteract();
             else if (code === KeyCode.KEY_X) this.codex.toggle();
         } else if (this.gm.state === GameState.MENU) {
             if (code === KeyCode.KEY_X || code === KeyCode.ESCAPE) this.codex.toggle();
@@ -252,6 +264,10 @@ export class GameRoot extends Component {
     }
 
     private onKeyUp(event: EventKeyboard): void {
+        if (event.keyCode === KeyCode.SHIFT_LEFT || event.keyCode === KeyCode.SHIFT_RIGHT) {
+            this.player.setSprint(false);
+            return;
+        }
         const dir = this.keyToDir(event.keyCode);
         if (dir) this.player.clearHold(dir);
     }

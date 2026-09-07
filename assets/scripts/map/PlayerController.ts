@@ -1,4 +1,4 @@
-import { _decorator, Color, Component, Graphics, Node, tween, Vec3, UITransform } from 'cc';
+import { _decorator, Color, Component, Graphics, Node, sys, tween, Vec3, UITransform } from 'cc';
 import { MapView, TILE } from './MapView';
 import { GameManager, GameState } from '../core/GameManager';
 import { EventBus, GEvent } from '../core/EventBus';
@@ -25,11 +25,15 @@ export class PlayerController extends Component {
     gy = 0;
     facing: Dir = 'down';
     moving = false;
+    sprinting = sys.isMobile;  // 移动端默认冲刺(无Shift键)
     private holdDir: Dir | null = null;
     private gfx: Graphics;
     private animT = 0;
     private lastFrame = -1;
     private mapView: MapView;
+    /** 遇敌冷却:至少走这么多步才可能触发随机遇敌 */
+    private stepsSinceEncounter = 0;
+    private static readonly MIN_STEPS = 5;
 
     setMapView(map: MapView): void {
         this.mapView = map;
@@ -41,6 +45,7 @@ export class PlayerController extends Component {
         this.gy = gy;
         this.facing = facing;
         this.moving = false;
+        this.stepsSinceEncounter = 0;  // 切图重置冷却
         this.node.setPosition(this.mapView.gridToPos(gx, gy));
         this.paintPlayer();
     }
@@ -51,6 +56,10 @@ export class PlayerController extends Component {
 
     clearHold(dir: Dir): void {
         if (this.holdDir === dir) this.holdDir = null;
+    }
+
+    setSprint(on: boolean): void {
+        this.sprinting = on;
     }
 
     /** 交互:面向格的 NPC */
@@ -75,7 +84,7 @@ export class PlayerController extends Component {
             this.tryMove(this.holdDir);
         }
         // 走路动画
-        this.animT += dt;
+        this.animT += dt * (this.sprinting ? 2 : 1);
         const frame = this.moving ? Math.floor(this.animT * 8) % 2 : 0;
         if (frame !== this.lastFrame) {
             this.lastFrame = frame;
@@ -98,8 +107,9 @@ export class PlayerController extends Component {
         this.facing = dir;
         this.moving = true;
         const to = this.mapView.gridToPos(tx, ty);
+        const dur = this.sprinting ? 0.08 : 0.16;
         tween(this.node)
-            .to(0.16, { position: to }, { easing: 'linear' })
+            .to(dur, { position: to }, { easing: 'linear' })
             .call(() => {
                 this.moving = false;
                 this.gx = tx;
@@ -134,9 +144,11 @@ export class PlayerController extends Component {
             return;
         }
 
-        // 3. 随机遇敌
+        // 3. 随机遇敌(带步数冷却)
+        this.stepsSinceEncounter++;
         const map = this.mapView.mapDef;
-        if (map.encounterRate > 0 && Math.random() < map.encounterRate) {
+        if (map.encounterRate > 0 && this.stepsSinceEncounter >= PlayerController.MIN_STEPS && Math.random() < map.encounterRate) {
+            this.stepsSinceEncounter = 0;
             const beastId = map.pool[Math.floor(Math.random() * map.pool.length)];
             const count = Math.random() < 0.3 ? 2 : 1;   // 30% 概率两只
             const beasts = [beastId];

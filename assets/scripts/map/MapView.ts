@@ -1,7 +1,8 @@
-import { _decorator, Color, Component, Graphics, Node, UITransform, Vec3, resources, Sprite, SpriteFrame } from 'cc';
+import { _decorator, Color, Component, Graphics, Node, tween, UITransform, Vec3, resources, Sprite, SpriteFrame, UIOpacity } from 'cc';
 import { MapDef, NpcDef } from '../core/GameData';
 import { MapsData } from '../data/MapsData';
 import { UIFactory } from '../ui/UIFactory';
+import { GameManager } from '../core/GameManager';
 
 const { ccclass } = _decorator;
 
@@ -22,6 +23,8 @@ export class MapView extends Component {
 
     private gGround: Graphics;
     private npcNodes: Node[] = [];
+    private portalNodes: Node[] = [];
+    private bossNodes: Node[] = [];
 
     // —— 瓦片色板(FC 复古色)——
     private static COLORS: Record<string, Color[]> = {
@@ -64,7 +67,10 @@ export class MapView extends Component {
         const map = this.mapDef;
         if (gx < 0 || gy < 0 || gx >= map.cols || gy >= map.rows) return false;
         const ch = map.ground[gy][gx];
-        return !'25F387D'.includes(ch);  // 水/墙/屋顶/山/树/井/床 阻挡
+        if ('25F387D'.includes(ch)) return false;  // 水/墙/屋顶/山/树/井/床 阻挡
+        // NPC 占位阻挡:人物不能重叠
+        if (map.npcs.some(n => n.x === gx && n.y === gy)) return false;
+        return true;
     }
 
     /** 生在玩家脚下的触发格(6门 B洞口 仅用作景观,传送由 portal 定义) */
@@ -79,12 +85,18 @@ export class MapView extends Component {
         const map = MapsData.get(mapId);
         this.mapDef = map;
 
-        // 清理旧 NPC
+        // 清理旧 NPC、传送门和 BOSS 标记
         for (const n of this.npcNodes) n.destroy();
         this.npcNodes = [];
+        for (const n of this.portalNodes) n.destroy();
+        this.portalNodes = [];
+        for (const n of this.bossNodes) n.destroy();
+        this.bossNodes = [];
 
         this.gGround.clear();
         this.paintGround();
+        this.spawnPortals();
+        this.spawnBossMarkers();
         this.spawnNpcs();
     }
 
@@ -210,6 +222,111 @@ export class MapView extends Component {
                     }
                 }
             }
+        }
+    }
+
+    /** 传送门视觉:发光圆环 + 箭头 + 呼吸动画 */
+    private spawnPortals(): void {
+        const map = this.mapDef;
+        for (const portal of map.portals) {
+            const node = new Node(`portal_${portal.x}_${portal.y}`);
+            node.layer = this.node.layer;
+            node.addComponent(UITransform).setContentSize(TILE, TILE);
+            node.setPosition(this.gridToPos(portal.x, portal.y));
+            this.node.addChild(node);
+            this.portalNodes.push(node);
+
+            const g = node.addComponent(Graphics);
+            const destMap = MapsData.get(portal.mapId);
+            const destName = destMap ? destMap.name : '';
+
+            // 外层光晕(淡蓝/淡紫透明圆)
+            g.fillColor = new Color(80, 160, 255, 60);
+            g.circle(0, 0, 15);
+            g.fill();
+
+            // 中层光环
+            g.strokeColor = new Color(100, 200, 255, 200);
+            g.lineWidth = 2;
+            g.circle(0, 0, 11);
+            g.stroke();
+
+            // 内层光核
+            g.fillColor = new Color(160, 220, 255, 180);
+            g.circle(0, 0, 5);
+            g.fill();
+
+            // 方向箭头(指向传送方向)
+            g.fillColor = new Color(255, 255, 200, 230);
+            const dir = portal.dir || 'up';
+            const ay = dir === 'up' ? 1 : dir === 'down' ? -1 : 0;
+            const ax = dir === 'left' ? -1 : dir === 'right' ? 1 : 0;
+            g.moveTo(ax * 6 - ay * 4, ay * 6 - ax * 4);
+            g.lineTo(ax * 6 + ay * 4, ay * 6 + ax * 4);
+            g.lineTo(ax * 12, ay * 12);
+            g.close();
+            g.fill();
+
+            // 目标地名标签
+            if (destName) {
+                UIFactory.label(node, `→${destName}`, 10, new Vec3(0, -22), new Color(180, 220, 255, 220), { outline: true });
+            }
+
+            // 呼吸动画:透明度循环
+            const opacity = node.addComponent(UIOpacity);
+            opacity.opacity = 220;
+            tween(opacity)
+                .to(1.2, { opacity: 120 })
+                .to(1.2, { opacity: 220 })
+                .union()
+                .repeatForever()
+                .start();
+        }
+    }
+
+    /** BOSS 标记:固定遇敌点显示醒目警告标识（已击败则不显示） */
+    private spawnBossMarkers(): void {
+        const map = this.mapDef;
+        const gm = GameManager.inst;
+        for (const enc of map.encounters) {
+            // 已触发过的固定遇敌不再显示
+            const encKey = `enc!${map.id}_${enc.x}_${enc.y}`;
+            if (gm && gm.hasFlag(encKey)) continue;
+
+            const node = new Node(`boss_${enc.x}_${enc.y}`);
+            node.layer = this.node.layer;
+            node.addComponent(UITransform).setContentSize(TILE, TILE);
+            node.setPosition(this.gridToPos(enc.x, enc.y));
+            this.node.addChild(node);
+            this.bossNodes.push(node);
+
+            const g = node.addComponent(Graphics);
+
+            // 红色警告光环
+            g.fillColor = new Color(200, 50, 40, 50);
+            g.circle(0, 0, 14);
+            g.fill();
+
+            g.strokeColor = new Color(255, 80, 60, 200);
+            g.lineWidth = 2;
+            g.circle(0, 0, 12);
+            g.stroke();
+
+            // 中心“！”警告符号
+            g.fillColor = new Color(255, 240, 100, 240);
+            g.rect(-2, -2, 4, 12);  // 竖线
+            g.rect(-2, -7, 4, 4);   // 下点
+            g.fill();
+
+            // 呼吸动画
+            const opacity = node.addComponent(UIOpacity);
+            opacity.opacity = 230;
+            tween(opacity)
+                .to(0.8, { opacity: 100 })
+                .to(0.8, { opacity: 230 })
+                .union()
+                .repeatForever()
+                .start();
         }
     }
 

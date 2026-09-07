@@ -1,4 +1,4 @@
-import { _decorator, Component, Graphics, input, Input, EventKeyboard, KeyCode, Label, Node, UITransform, Vec3 } from 'cc';
+import { _decorator, Color, Component, Graphics, input, Input, EventKeyboard, EventMouse, KeyCode, Label, Node, UITransform, Vec3 } from 'cc';
 import { DialogueNode } from '../core/GameData';
 import { DialogueData } from '../data/DialogueData';
 import { GameManager, GameState } from '../core/GameManager';
@@ -18,6 +18,7 @@ export class DialogueUI extends Component {
     private nameLabel: Label;
     private textLabel: Label;
     private textNode: Node;
+    private arrowNode: Node;
     private choices: Node[] = [];
     private choiceIdx = 0;
 
@@ -38,21 +39,44 @@ export class DialogueUI extends Component {
         this.node.addComponent(UITransform).setContentSize(960, 600);
         this.node.active = false;
 
-        const panel = UIFactory.panel(this.node, 0, -215, 920, 165);
-        // 名字窗
-        const nameBox = UIFactory.panel(this.node, -330, -118, 230, 42);
-        this.nameLabel = UIFactory.label(nameBox, '', 18, new Vec3(0, 0), undefined, { bold: true, outline: true });
+        // ── 主对话面板:屏幕底部(红白机 DQ 风格) ──
+        // 面板 Y 范围: -150 ~ -290, X: -450 ~ +450
+        UIFactory.panel(this.node, 0, -220, 900, 140);
+
+        // ── 名字牌:骑在面板顶边左侧 ──
+        const nameBox = UIFactory.panel(this.node, -320, -148, 160, 32);
+        this.nameLabel = UIFactory.label(nameBox, '', 16, new Vec3(0, 0), undefined, { bold: true, outline: true });
+
+        // ── 文字区域:严格在面板内部 ──
         this.textNode = new Node('text');
         this.textNode.layer = this.node.layer;
-        this.textNode.addComponent(UITransform).setContentSize(860, 110);
-        this.textNode.setPosition(0, -205);
+        this.textNode.addComponent(UITransform).setContentSize(840, 100);
+        this.textNode.setPosition(0, -220);
         this.node.addChild(this.textNode);
-        this.textLabel = UIFactory.label(this.textNode, '', 20, new Vec3(-430, 95), undefined, { anchorX: 0, anchorY: 1 });
+        // 文字锚点=左上,从面板内顶部开始排列
+        this.textLabel = UIFactory.label(this.textNode, '', 20, new Vec3(-410, 50), undefined, { anchorX: 0, anchorY: 1 });
         this.textLabel.horizontalAlign = Label.HorizontalAlign.LEFT;
         this.textLabel.verticalAlign = Label.VerticalAlign.TOP;
-        (this.textLabel.node.getComponent(UITransform)!).setContentSize(860, 120);
+        (this.textLabel.node.getComponent(UITransform)!).setContentSize(820, 95);
+
+        // ── ▼ 继续指示箭头:面板右下角 ──
+        this.arrowNode = new Node('arrow');
+        this.arrowNode.layer = this.node.layer;
+        this.arrowNode.addComponent(UITransform).setContentSize(20, 16);
+        this.arrowNode.setPosition(410, -278);
+        const ag = this.arrowNode.addComponent(Graphics);
+        ag.fillColor = new Color(255, 240, 160, 255);
+        ag.moveTo(-7, 5);
+        ag.lineTo(7, 5);
+        ag.lineTo(0, -5);
+        ag.close();
+        ag.fill();
+        this.node.addChild(this.arrowNode);
+        this.arrowNode.active = false;
 
         input.on(Input.EventType.KEY_DOWN, this.onKeyDown, this);
+        input.on(Input.EventType.MOUSE_DOWN, this.onClick, this);
+        input.on(Input.EventType.TOUCH_START, this.onClick, this);
     }
 
     update(dt: number): void {
@@ -65,6 +89,7 @@ export class DialogueUI extends Component {
         }
         if (this.shownChars >= this.fullText.length) {
             this.typing = false;
+            this.arrowNode.active = true;
         }
     }
 
@@ -112,16 +137,17 @@ export class DialogueUI extends Component {
         this.typing = true;
         this.typingAcc = 0;
         this.textLabel.string = '';
+        this.arrowNode.active = false;
     }
 
     private showChoices(): void {
         this.inChoices = true;
         this.choiceIdx = 0;
         this.choices = [];
-        // 文本末尾追加提示
-        this.textLabel.string = this.fullText + '\n　';
+        this.arrowNode.active = false;
+        this.textLabel.string = '';
         this.curNode!.choices!.forEach((c, i) => {
-            const btn = UIFactory.button(this.node, `　${c.text}`, -120, -20 - i * 46, 640, 42, 18);
+            const btn = UIFactory.button(this.node, `　${c.text}`, 0, -185 - i * 42, 700, 36, 18);
             this.choices.push(btn);
         });
         this.paintChoices();
@@ -226,6 +252,7 @@ export class DialogueUI extends Component {
         this.ended = true;
         this.inChoices = false;
         this.typing = false;
+        this.arrowNode.active = false;
         this.clearChoiceButtons();
         this.node.active = false;
         this.curNode = null;
@@ -241,6 +268,13 @@ export class DialogueUI extends Component {
         if (!this.node.active || this.ended) return;
         const code = event.keyCode;
         const confirm = code === KeyCode.ENTER || code === KeyCode.SPACE || code === KeyCode.KEY_Z;
+        const cancel = code === KeyCode.ESCAPE || code === KeyCode.KEY_X;
+
+        // ESC/X 强制关闭对话
+        if (cancel) {
+            this.close();
+            return;
+        }
 
         if (this.inChoices) {
             if (code === KeyCode.ARROW_UP) { this.choiceIdx = (this.choiceIdx + this.choices.length - 1) % this.choices.length; this.paintChoices(); }
@@ -261,9 +295,24 @@ export class DialogueUI extends Component {
                 this.shownChars = this.fullText.length;
                 this.textLabel.string = this.fullText;
                 this.typing = false;
+                this.arrowNode.active = true;
             } else {
                 this.nextLine();
             }
+        }
+    }
+
+    /** 鼠标点击/触摸:推进对话(同 confirm 键) */
+    private onClick(_event: EventMouse | any): void {
+        if (!this.node.active || this.ended) return;
+        if (this.inChoices) return;  // 选项中不响应点击,避免误触
+        if (this.typing) {
+            this.shownChars = this.fullText.length;
+            this.textLabel.string = this.fullText;
+            this.typing = false;
+            this.arrowNode.active = true;
+        } else {
+            this.nextLine();
         }
     }
 }
