@@ -1,5 +1,6 @@
 import { ActorStats, BeastDef, SaveData } from './GameData';
 import { BeastsData } from '../data/BeastsData';
+import { MapsData } from '../data/MapsData';
 import { SkillsData } from '../data/SkillsData';
 import { EventBus, GEvent } from './EventBus';
 import { SaveManager } from './SaveManager';
@@ -81,8 +82,28 @@ export class GameManager {
             this.curMapId = data.mapId;
             this.spawnX = data.x;
             this.spawnY = data.y;
+            this.migrateFlags();
         } else {
             this.newGame();
+        }
+    }
+
+    /**
+     * 旧存档兼容:修复"战败后固定BOSS消失"的历史 bug。
+     * 旧版本在触发战斗的瞬间就写入 enc!flag,战败后穷奇/应龙永久消失、剧情卡死。
+     * 现在:触发点标记只有真正击败后才写。读档时若发现"已标记但对应 winFlag 不存在",
+     * 说明玩家当年是战败离开的 → 移除标记,让 BOSS 重新出现。
+     */
+    private migrateFlags(): void {
+        for (const map of MapsData.all) {
+            for (const enc of map.encounters) {
+                if (!enc.once || !enc.winFlag) continue;
+                const encKey = `enc!${map.id}_${enc.x}_${enc.y}`;
+                if (this.flags.has(encKey) && !this.flags.has(enc.winFlag)) {
+                    this.flags.delete(encKey);
+                    console.log(`[GameManager] 兼容修复:重放固定遇敌 ${map.id}(${enc.x},${enc.y})`);
+                }
+            }
         }
     }
 
@@ -109,6 +130,10 @@ export class GameManager {
     addFlag(flag: string): void {
         this.flags.add(flag);
         EventBus.emit(GEvent.FLAG_CHANGED, flag);
+    }
+
+    removeFlag(flag: string): void {
+        this.flags.delete(flag);
     }
 
     hasFlag(flag: string): boolean {

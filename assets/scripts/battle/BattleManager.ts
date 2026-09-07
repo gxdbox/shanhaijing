@@ -1,4 +1,4 @@
-import { _decorator, Color, Component, Graphics, input, Input, EventKeyboard, KeyCode, Label, Node, resources, Sprite, SpriteFrame, tween, UITransform, Vec3 } from 'cc';
+import { _decorator, Color, Component, Graphics, input, Input, EventKeyboard, KeyCode, Label, Node, resources, Sprite, SpriteFrame, tween, UITransform, UIOpacity, Vec3 } from 'cc';
 import { ActorStats, FixedEncounterDef, SkillDef } from '../core/GameData';
 import { BeastsData } from '../data/BeastsData';
 import { SkillsData } from '../data/SkillsData';
@@ -90,7 +90,14 @@ export class BattleManager extends Component {
         this.node.active = false;
         this.clearUI();
         const gm = GameManager.inst;
-        if (win && this.encounter?.winFlag) gm.addFlag(this.encounter.winFlag);
+        if (win) {
+            if (this.encounter?.winFlag) gm.addFlag(this.encounter.winFlag);
+            // 固定遇敌:胜利后才写入"已触发"标记 → 战败可重战,BOSS 不会消失
+            if (this.encounter?.once) {
+                const mapId = gm.curMapId;
+                gm.addFlag(`enc!${mapId}_${this.encounter.x}_${this.encounter.y}`);
+            }
+        }
         gm.save();
         EventBus.emit(GEvent.BATTLE_END, { win });
         EventBus.emit('battle:ended', { win, encounter: this.encounter });
@@ -116,7 +123,7 @@ export class BattleManager extends Component {
             }
         });
 
-        // 敌人区(右侧)
+        // 敌人区(右侧,面朝左=朝向我方)
         this.enemyNodes = [];
         const n = this.enemies.length;
         this.enemies.forEach((e, i) => {
@@ -127,15 +134,24 @@ export class BattleManager extends Component {
             const ey = n === 1 ? 60 : (140 - i * 130);
             node.setPosition(ex, ey, 0);
             this.node.addChild(node);
+            node.addComponent(UIOpacity);
+
             const def = BeastsData.get(e.beastId!);
-            const sprite = node.addComponent(Sprite);
+            // 角色图放子节点:可独立水平翻转,不影响名字/血条
+            const spriteNode = new Node('sprite');
+            spriteNode.layer = this.node.layer;
+            spriteNode.addComponent(UITransform).setContentSize(160, 160);
+            node.addChild(spriteNode);
+            const sprite = spriteNode.addComponent(Sprite);
             sprite.sizeMode = Sprite.SizeMode.CUSTOM;
-            const pixels = node.addComponent(Graphics);
+            const pixels = spriteNode.addComponent(Graphics);
             PixelBeasts.draw(pixels, def.id, 140);
             resources.load(`textures/${def.tex}/spriteFrame`, SpriteFrame, (err2, sf) => {
-                if (!err2 && node.isValid) {
+                if (!err2 && spriteNode.isValid) {
                     sprite.spriteFrame = sf;
                     pixels.enabled = false;
+                    spriteNode.getComponent(UITransform)!.setContentSize(160, 160);
+                    spriteNode.setScale(1, 1, 1);
                 }
             });
             const nameLabel = UIFactory.label(this.node, def.name, 16, new Vec3(ex, ey + 85), new Color(255, 230, 140, 255), { bold: true, outline: true });
@@ -147,7 +163,7 @@ export class BattleManager extends Component {
             this.enemyNodes.push({ node, sprite, hpBar: hpBar.addComponent(Graphics), nameLabel });
         });
 
-        // ── 我方区域(左侧) ──
+        // ── 我方区域(左侧,全部面朝右=朝向敌人) ──
         this.partyNodes = [];
         const pn = this.party.length;
         this.party.forEach((member, i) => {
@@ -158,12 +174,31 @@ export class BattleManager extends Component {
             const py = pn === 1 ? 40 : (130 - i * 120);
             node.setPosition(px, py, 0);
             this.node.addChild(node);
-            const pixels = node.addComponent(Graphics);
+            node.addComponent(UIOpacity);
+
+            // 角色图子节点
+            const spriteNode = new Node('sprite');
+            spriteNode.layer = this.node.layer;
+            spriteNode.addComponent(UITransform).setContentSize(100, 100);
+            node.addChild(spriteNode);
+            const sprite = spriteNode.addComponent(Sprite);
+            sprite.sizeMode = Sprite.SizeMode.CUSTOM;
+            const pixels = spriteNode.addComponent(Graphics);
             if (member.beastId) {
                 PixelBeasts.draw(pixels, member.beastId, 90);
             } else {
                 BattleManager.drawPlayerBack(pixels);
             }
+            // 加载立绘:主角→player/axuan(面向右),伙伴→beasts/<id>(面向左,翻转朝右)
+            const texPath = member.beastId ? `textures/beasts/${member.beastId}` : 'textures/player/axuan';
+            resources.load(`${texPath}/spriteFrame`, SpriteFrame, (err2, sf) => {
+                if (!err2 && spriteNode.isValid) {
+                    sprite.spriteFrame = sf;
+                    pixels.enabled = false;
+                    spriteNode.getComponent(UITransform)!.setContentSize(100, 100);
+                    spriteNode.setScale(member.beastId ? -1 : 1, 1, 1);
+                }
+            });
             // 名字
             const nameLabel = UIFactory.label(this.node, member.name, 14, new Vec3(px, py - 60), new Color(200, 240, 200, 255), { outline: true });
             // HP 条
@@ -608,6 +643,14 @@ export class BattleManager extends Component {
         this.setMsg(act.text);
         await sleep(500);
 
+        // 攻击者前冲:我方朝右扑向敌人,敌人朝左扑向我方
+        if (act.targets.length > 0) {
+            const atkNode = act.isEnemy
+                ? this.enemyNodes[this.enemies.indexOf(act.actor)]?.node
+                : this.partyNodes[this.party.indexOf(act.actor)]?.node;
+            if (atkNode) await this.lungeNode(atkNode, act.isEnemy);
+        }
+
         for (const target of act.targets) {
             if (target.hp <= 0) continue;
             let amount = 0;
@@ -632,10 +675,27 @@ export class BattleManager extends Component {
                 target.hp = Math.max(0, target.hp - amount);
             }
 
-            // 伤害/治疗数字
+            // 目标节点与命中特效
+            const tRef = this.targetNode(target);
+            if (tRef) {
+                const tx = tRef.node.position.x;
+                const ty = tRef.node.position.y;
+                if (isHeal) {
+                    this.spawnBurst(tx, ty, new Color(120, 240, 140, 255), false);
+                } else if (act.skill && act.skill.type === 'magic') {
+                    this.spawnBurst(tx, ty, new Color(150, 110, 255, 255), true);
+                } else {
+                    this.spawnBurst(tx, ty, new Color(255, 240, 150, 255), false);
+                }
+                if (target.hp > 0) this.flashNode(tRef.node);
+            }
+
+            // 伤害/治疗数字(浮到目标上方)
             const color = isHeal ? new Color(120, 240, 140, 255) : new Color(255, 220, 90, 255);
             const prefix = isHeal ? '+' : '-';
-            const label = UIFactory.label(this.node, `${prefix}${amount}`, 26, new Vec3(0, 40), color, { bold: true, outline: true });
+            const dx = tRef ? tRef.node.position.x : 0;
+            const dy = tRef ? tRef.node.position.y + 40 : 40;
+            const label = UIFactory.label(this.node, `${prefix}${amount}`, 26, new Vec3(dx, dy), color, { bold: true, outline: true });
             tween(label.node)
                 .by(0.8, { position: new Vec3(0, 40) })
                 .call(() => label.node.destroy())
@@ -666,6 +726,58 @@ export class BattleManager extends Component {
         }
         this.refreshEnemyHp();
         this.refreshPartyLabel();
+    }
+
+    /** 根据战斗者定位其节点 */
+    private targetNode(target: ActorStats): { node: Node; isEnemy: boolean } | null {
+        const ei = this.enemies.indexOf(target);
+        if (ei >= 0 && this.enemyNodes[ei]) return { node: this.enemyNodes[ei].node, isEnemy: true };
+        const pi = this.party.indexOf(target);
+        if (pi >= 0 && this.partyNodes[pi]) return { node: this.partyNodes[pi].node, isEnemy: false };
+        return null;
+    }
+
+    /** 攻击前冲:朝目标方向扑出再收回 */
+    private lungeNode(node: Node, isEnemy: boolean): Promise<void> {
+        return new Promise(res => {
+            const orig = node.position.clone();
+            const dx = isEnemy ? -36 : 36;   // 敌人向左扑向我方,我方向右扑向敌人
+            tween(node)
+                .to(0.1, { position: new Vec3(orig.x + dx, orig.y, orig.z) })
+                .to(0.12, { position: orig })
+                .call(() => res())
+                .start();
+        });
+    }
+
+    /** 受击闪白 */
+    private flashNode(node: Node): void {
+        const op = node.getComponent(UIOpacity);
+        if (!op) return;
+        op.opacity = 70;
+        tween(op).to(0.12, { opacity: 255 }).start();
+    }
+
+    /** 命中冲击波:扩散圆环 + 中心光团,淡出后销毁 */
+    private spawnBurst(x: number, y: number, color: Color, big = false): void {
+        const fx = new Node('fx');
+        fx.layer = this.node.layer;
+        fx.addComponent(UITransform).setContentSize(1, 1);
+        fx.setPosition(x, y, 0);
+        this.node.addChild(fx);
+        const g = fx.addComponent(Graphics);
+        const r = big ? 42 : 24;
+        g.lineWidth = 3;
+        g.strokeColor = color;
+        g.circle(0, 0, r);
+        g.stroke();
+        g.fillColor = new Color(color.r, color.g, color.b, 80);
+        g.circle(0, 0, r * 0.55);
+        g.fill();
+        const op = fx.addComponent(UIOpacity);
+        op.opacity = 255;
+        tween(fx).to(0.32, { scale: new Vec3(1.7, 1.7, 1) }).call(() => fx.destroy()).start();
+        tween(op).to(0.32, { opacity: 0 }).start();
     }
 
     private onVictory(): void {

@@ -12,6 +12,8 @@ import { DialogueUI } from '../ui/DialogueUI';
 import { CodexUI } from '../ui/CodexUI';
 import { BattleManager } from '../battle/BattleManager';
 import { MapsData } from '../data/MapsData';
+import { BeastsData } from '../data/BeastsData';
+import { AudioManager } from '../audio/AudioManager';
 
 const { ccclass } = _decorator;
 
@@ -48,6 +50,15 @@ export class GameRoot extends Component {
         this.buildMap(this.gm.curMapId);
         this.player.placeAt(this.gm.spawnX, this.gm.spawnY);
         this.gm.setState(GameState.EXPLORE);
+
+        // 背景音乐:开场剧情用 title,否则按地图
+        AudioManager.instance.init(this.node);
+        if (!hasSave) {
+            AudioManager.instance.playBgm('title', false);
+        } else {
+            AudioManager.instance.playMapBgm(this.gm.curMapId);
+        }
+
         if (!hasSave) {
             // 新游戏:开场剧情
             this.dialogue.show('home_intro');
@@ -65,6 +76,13 @@ export class GameRoot extends Component {
     update(_dt: number): void {
         if (this.player) this.player.tick(_dt);
         if (this.mapView) this.mapView.followCamera();
+    }
+
+    onDestroy(): void {
+        if (this.bgmRestoreTimer) {
+            clearTimeout(this.bgmRestoreTimer);
+            this.bgmRestoreTimer = null;
+        }
     }
 
     // ==================== 场景结构 ====================
@@ -174,36 +192,67 @@ export class GameRoot extends Component {
         EventBus.on('battle:startFixed', (enc) => {
             this.gm.save();
             this.battle.startBattle(enc.beastIds, this.curBattleBg(), enc);
+            AudioManager.instance.playBattleBgm(this.isBossBattle(enc.beastIds));
         }, this);
         EventBus.on('battle:startRandom', (beasts: string[], bgTex: string) => {
             this.gm.save();
             this.battle.startBattle(beasts, bgTex, null);
+            AudioManager.instance.playBattleBgm(this.isBossBattle(beasts));
         }, this);
         EventBus.on('battle:startDialogue', (beasts: string[]) => {
             this.gm.save();
             this.battle.startBattle(beasts, this.curBattleBg(), null);
+            AudioManager.instance.playBattleBgm(this.isBossBattle(beasts));
         }, this);
 
         EventBus.on('battle:ended', ({ win }: { win: boolean }) => {
             if (this.dialogue.isAwaitingBattle) {
-                if (win) this.dialogue.onBattleWin();
-                else {
+                if (win) {
+                    this.dialogue.onBattleWin();
+                    AudioManager.instance.playVictory();
+                    this.scheduleRestoreBgm();
+                } else {
                     this.dialogue.onBattleLose();
                     this.afterDefeat();
                 }
             } else {
                 if (!win) this.afterDefeat();
                 this.gm.setState(GameState.EXPLORE);
+                if (win) {
+                    AudioManager.instance.playVictory();
+                    this.scheduleRestoreBgm();
+                } else {
+                    AudioManager.instance.playMapBgm(this.gm.curMapId);
+                }
             }
         }, this);
 
         EventBus.on(GEvent.DIALOG_END, () => {
             this.lastDialogEnd = Date.now();
+            // 开场剧情结束后,从 title 切入村庄 BGM
+            if (this.gm.hasFlag('intro_done')) {
+                AudioManager.instance.playMapBgm(this.gm.curMapId);
+            }
         }, this);
     }
 
     private curBattleBg(): string {
         return MapsData.get(this.gm.curMapId).bgTex || 'battle/field';
+    }
+
+    /** 是否为 BOSS 战(用于切 boss 曲) */
+    private isBossBattle(beastIds: string[]): boolean {
+        return beastIds.some(id => BeastsData.get(id).boss === true);
+    }
+
+    /** 胜利旋律播完/玩家按 Z 后,切回当前地图 BGM */
+    private bgmRestoreTimer: any = null;
+    private scheduleRestoreBgm(): void {
+        if (this.bgmRestoreTimer) clearTimeout(this.bgmRestoreTimer);
+        this.bgmRestoreTimer = setTimeout(() => {
+            this.bgmRestoreTimer = null;
+            AudioManager.instance.playMapBgm(this.gm.curMapId);
+        }, 6000);
     }
 
     /** 战败:送回家里,全队复活 */
@@ -222,6 +271,7 @@ export class GameRoot extends Component {
         this.player.placeAt(x, y, dir);
         this.gm.save();
         this.gm.setState(GameState.EXPLORE);
+        AudioManager.instance.playMapBgm(mapId);
     }
 
     private buildMap(mapId: string): void {

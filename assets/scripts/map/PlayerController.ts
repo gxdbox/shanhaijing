@@ -139,7 +139,8 @@ export class PlayerController extends Component {
         const encKey = `${this.mapView.mapDef.id}_${this.gx}_${this.gy}`;
         if (enc && !gm.hasFlag('enc!' + encKey)) {
             if (enc.flagKey && !gm.hasFlag(enc.flagKey)) return;
-            if (enc.once) gm.addFlag('enc!' + encKey);
+            // 注意:不再在此写入 enc!flag。战斗胜利后才标记(见 BattleManager.endBattle),
+            // 战败不会导致穷奇/应龙这类 BOSS 永久消失、剧情卡死。
             EventBus.emit('battle:startFixed', enc);
             return;
         }
