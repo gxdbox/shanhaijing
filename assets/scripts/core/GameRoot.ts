@@ -104,7 +104,7 @@ export class GameRoot extends Component {
         wCam.priority = 0;
         wCam.visibility = Layers.Enum.DEFAULT;
         wCam.clearFlags = Camera.ClearFlag.SOLID_COLOR;
-        wCam.clearColor = new Color(12, 14, 24, 255);
+        wCam.clearColor = new Color(96, 160, 180, 255);   // 清新山水天空色（原深蓝黑 12,14,24 → 明亮天青）
         wCam.near = 1;
         wCam.far = 2000;
         wCam.orthoHeight = 300;
