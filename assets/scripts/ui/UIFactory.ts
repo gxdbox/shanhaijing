@@ -1,10 +1,38 @@
-import { Color, Graphics, Label, Node, UITransform, Vec3 } from 'cc';
+import { Color, Graphics, Label, Node, resources, Sprite, SpriteFrame, UITransform, Vec3 } from 'cc';
 
 /**
  * UI 工厂:红白机风格的窗口面板 / 文字
  * 设计分辨率 960x600,原点在屏幕中心
+ *
+ * v2 升级：面板/按钮优先加载"清新国风"AI 素材（textures/ui/panel、button），
+ * 加载成功用 Sprite 显示（九宫格拉伸），失败自动回退 Graphics 画法（零素材可玩）。
  */
 export class UIFactory {
+    // 素材缓存：防止重复加载
+    private static cache: Record<string, SpriteFrame> = {};
+
+    /** 异步加载 SpriteFrame（带缓存）；失败返回 null */
+    static loadSF(path: string, cb: (sf: SpriteFrame | null) => void): void {
+        if (UIFactory.cache[path]) { cb(UIFactory.cache[path]); return; }
+        resources.load(`textures/${path}/spriteFrame`, SpriteFrame, (err, sf) => {
+            if (!err && sf) {
+                UIFactory.cache[path] = sf;
+                cb(sf);
+            } else {
+                cb(null);
+            }
+        });
+    }
+
+    /** 给节点挂 Sprite（九宫格拉伸模式，适配不同尺寸面板） */
+    static setSprite(node: Node, sf: SpriteFrame, w: number, h: number): void {
+        const sp = node.getComponent(Sprite) ?? node.addComponent(Sprite);
+        sp.spriteFrame = sf;
+        sp.sizeMode = Sprite.SizeMode.CUSTOM;
+        sp.type = Sprite.Type.SLICED;   // 九宫格：边框不变形、内部拉伸
+        const tf = node.getComponent(UITransform) ?? node.addComponent(UITransform);
+        tf.setContentSize(w, h);
+    }
     /** 创建文字标签 */
     static label(
         parent: Node,
@@ -36,17 +64,36 @@ export class UIFactory {
         return label;
     }
 
-    /** 创建 DQ 风格窗口面板(半透明黑底 + 双层白描边) */
+    /** 创建 DQ 风格窗口面板：优先加载"清新国风"素材，失败回退 Graphics 画法 */
     static panel(
         parent: Node,
         x: number, y: number,
         w: number, h: number,
-        opts: { fill?: Color; border?: Color; radius?: number } = {},
+        opts: { fill?: Color; border?: Color; radius?: number; useImage?: boolean } = {},
     ): Node {
         const node = new Node('panel');
         node.layer = parent.layer;
         node.addComponent(UITransform).setContentSize(w, h);
-        const g = node.addComponent(Graphics);
+        const useImage = opts.useImage !== false;   // 默认尝试用素材
+        if (useImage) {
+            UIFactory.loadSF('ui/panel', (sf) => {
+                if (sf && node.isValid) {
+                    UIFactory.setSprite(node, sf, w, h);
+                } else {
+                    UIFactory.paintPanelGfx(node, w, h, opts);
+                }
+            });
+        } else {
+            UIFactory.paintPanelGfx(node, w, h, opts);
+        }
+        node.setPosition(x, y, 0);
+        parent.addChild(node);
+        return node;
+    }
+
+    /** Graphics 兜底画面板（原 DQ 风格，素材加载失败时用） */
+    private static paintPanelGfx(node: Node, w: number, h: number, opts: { fill?: Color; border?: Color; radius?: number }): void {
+        const g = node.getComponent(Graphics) ?? node.addComponent(Graphics);
         const fill = opts.fill ?? new Color(8, 10, 24, 200);
         const border = opts.border ?? new Color(235, 235, 235, 255);
         const r = opts.radius ?? 8;
@@ -60,12 +107,9 @@ export class UIFactory {
         g.lineWidth = 1;
         g.roundRect(-w / 2 + 5, -h / 2 + 5, w - 10, h - 10, r - 3);
         g.stroke();
-        node.setPosition(x, y, 0);
-        parent.addChild(node);
-        return node;
     }
 
-    /** 创建按钮节点(返回 node,内含 label 与 Graphics 底板) */
+    /** 创建按钮节点：优先加载"清新国风"素材，失败回退 Graphics 画法 */
     static button(
         parent: Node,
         text: string,
@@ -76,8 +120,14 @@ export class UIFactory {
         const node = new Node('btn');
         node.layer = parent.layer;
         node.addComponent(UITransform).setContentSize(w, h);
-        const g = node.addComponent(Graphics);
-        this.paintButton(g, w, h, false);
+        UIFactory.loadSF('ui/button', (sf) => {
+            if (sf && node.isValid) {
+                UIFactory.setSprite(node, sf, w, h);
+            } else {
+                const g = node.getComponent(Graphics) ?? node.addComponent(Graphics);
+                this.paintButton(g, w, h, false);
+            }
+        });
         this.label(node, text, size, new Vec3(0, 0), new Color(230, 230, 220, 255), { outline: true });
         node.setPosition(x, y, 0);
         parent.addChild(node);
