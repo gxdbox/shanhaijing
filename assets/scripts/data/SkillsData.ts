@@ -61,6 +61,56 @@ export class SkillsData {
             type: 'atk', power: 1.2, mpCost: 0, target: 'enemy',
             learnBeast: 'zhi',
         },
+        // ===== 第2期 异兽技能（日报开发,兼容现有战斗机制）=====
+        {
+            id: 'panyue',
+            name: '攀跃',
+            desc: '狌狌伏行扑击,以灵活身法重创一个敌人。',
+            type: 'atk', power: 1.4, mpCost: 3, target: 'enemy',
+            learnBeast: 'xingxing',
+        },
+        {
+            id: 'fuzhe',
+            name: '宜子孙・福泽',
+            desc: '鹿蜀瑞兽的祝福,让一名伙伴恢复生命。',
+            type: 'heal', power: 14, mpCost: 8, target: 'ally',
+            learnBeast: 'lushu',
+        },
+        {
+            id: 'yaoge',
+            name: '谣歌',
+            desc: '鹿蜀鸣声如谣,音波安抚,轻伤一个敌人。',
+            type: 'atk', power: 1.1, mpCost: 4, target: 'enemy',
+            learnBeast: 'lushu',
+        },
+        {
+            id: 'jishi',
+            name: '击石音',
+            desc: '狰吼如击石,音波震荡,重击一个敌人。',
+            type: 'atk', power: 1.6, mpCost: 5, target: 'enemy',
+            learnBeast: 'zheng',
+        },
+        {
+            id: 'wuweisao',
+            name: '五尾扫',
+            desc: '狰甩动五尾,横扫面前所有敌人。',
+            type: 'atk', power: 1.1, mpCost: 8, target: 'allEnemies',
+            learnBeast: 'zheng',
+        },
+        {
+            id: 'ehua',
+            name: '讹火',
+            desc: '毕方喷出青红怪火,灼烧一个敌人。',
+            type: 'magic', power: 1.8, mpCost: 8, target: 'enemy',
+            learnBeast: 'bifang',
+        },
+        {
+            id: 'hundunwu',
+            name: '浑敦乱舞',
+            desc: '帝江起舞,混沌之气席卷全场,重创所有敌人。',
+            type: 'magic', power: 1.4, mpCost: 12, target: 'allEnemies',
+            learnBeast: 'dijiang',
+        },
     ];
 
     private static map = new Map<string, SkillDef>(

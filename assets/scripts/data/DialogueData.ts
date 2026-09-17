@@ -168,6 +168,57 @@ export class DialogueData {
                 { speaker: '九尾狐', text: '他很强,还会「吞日」。先去把洞里的应龙领教了吧,契约者。' },
             ],
         },
+
+        // ============ 第2期 招摇之山・天山剧情（日报开发）============
+        xingxing_talk: {
+            id: 'xingxing_talk',
+            lines: [
+                { speaker: '', text: '一只白耳灵猿挂在桂树枝头,直勾勾望着你,忽然开口——' },
+                { speaker: '狌狌', text: '你……你刚才路过西边的两棵树,踩断了一根枯枝。' },
+                { speaker: '阿玄', text: '你怎么知道?!' },
+                { speaker: '狌狌', text: '我生而能知过去,却不知将来。你走过的每一步,我都看得见。' },
+                { speaker: '狌狌', text: '《山海经》说,食我者善走。你若收我,从此山海再远——一步即至。' },
+            ],
+            choices: [
+                { text: '结契!', next: 'xingxing_join' },
+            ],
+        },
+        xingxing_join: {
+            id: 'xingxing_join',
+            lines: [
+                { speaker: '狌狌', text: '嘿嘿,走咯!' },
+                { speaker: '', text: '☆ 狌狌 加入了队伍! ☆' },
+            ],
+            actions: ['setFlag:xingxing_joined', 'getBeast:xingxing', 'save'],
+        },
+
+        jingwei_meet: {
+            id: 'jingwei_meet',
+            lines: [
+                { speaker: '', text: '一只白喙赤足的小鸟衔着树枝,落在你肩头。' },
+                { speaker: '精卫', text: '……你也见过那片海吗?' },
+                { speaker: '阿玄', text: '你是……?' },
+                { speaker: '精卫', text: '我名女娃,炎帝之女。溺于东海,化为此鸟。' },
+                { speaker: '精卫', text: '人们叫我誓鸟、冤禽、志鸟……叫什么也罢。只要我还在飞,海就一天填不完。' },
+                { speaker: '阿玄', text: '你恨那片海吗?' },
+                { speaker: '精卫', text: '恨。可恨意不足以填海。' },
+                { speaker: '', text: '她衔起石子,头也不回地朝东海的方向飞去。' },
+            ],
+            actions: ['setFlag:met_jingwei', 'save'],
+        },
+
+        dijiang_before: {
+            id: 'dijiang_before',
+            lines: [
+                { speaker: '', text: '天山顶上,一团赤红的"黄囊"在雾中起舞,六足四翼,没有面目。' },
+                { speaker: '帝江', text: '(歌舞之声)……又一个想替我开窍的人吗?' },
+                { speaker: '阿玄', text: '开窍?' },
+                { speaker: '帝江', text: '很久以前,也有两位好友,待我极好。他们说——"无窍,便享不了声色之乐"。一日凿一窍,七日,我死了。' },
+                { speaker: '帝江', text: '死后我归来,明白了:他们凿开的不是窍,是欲望。如今我无面无目,反而看得比谁都清。' },
+                { speaker: '帝江', text: '你若要收我,便先证明——你能听懂这舞!' },
+            ],
+            actions: ['battle:dijiang'],
+        },
     };
 
     /**

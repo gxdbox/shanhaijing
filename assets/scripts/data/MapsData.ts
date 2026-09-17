@@ -99,13 +99,82 @@ export class MapsData {
         portals: [
             { x: 13, y: 17, mapId: 'qingqiu', tx: 10, ty: 2, dir: 'down' },
             { x: 12, y: 1, mapId: 'cave', tx: 6, ty: 12, dir: 'up' },
+            { x: 2, y: 1, mapId: 'zhaoyao', tx: 8, ty: 10, dir: 'up' },
         ],
         encounters: [
             { x: 13, y: 16, beastIds: ['zhi'], once: true },
         ],
         encounterRate: 0.015,
-        pool: ['zhi', 'xuangui', 'huanshu'],
+        pool: ['zhi', 'xuangui', 'huanshu', 'xingxing', 'lushu'],
         bgTex: 'battle/field',
+    };
+
+    static zhaoyao: MapDef = {
+        id: 'zhaoyao',
+        name: '招摇之山',
+        cols: 18, rows: 12,
+        ground: [
+            '333333333333333333',
+            '300008000000800003',
+            '300000000000000003',
+            '300080000800000003',
+            '300000222000000003',
+            '300000000000000003',
+            '300000008000000003',
+            '300800000000008003',
+            '300000000000000003',
+            '300000000000080003',
+            '300000000000000003',
+            '333333333333333333',
+        ],
+        npcs: [
+            { id: 'xingxing', name: '狌狌', x: 6, y: 5, dir: 'down', dialogue: 'xingxing_talk' },
+            { id: 'jingwei', name: '精卫', x: 13, y: 9, dir: 'down', dialogue: 'jingwei_meet' },
+        ],
+        portals: [
+            { x: 8, y: 10, mapId: 'wild', tx: 2, ty: 2, dir: 'down' },
+            { x: 16, y: 6, mapId: 'tianshan', tx: 1, ty: 6, dir: 'right' },
+        ],
+        encounters: [
+            { x: 10, y: 8, beastIds: ['lushu'], once: true, winFlag: 'lushu_down' },
+            { x: 4, y: 3, beastIds: ['zheng'], once: true, winFlag: 'zheng_down' },
+            { x: 13, y: 2, beastIds: ['bifang'], once: true, winFlag: 'bifang_down' },
+        ],
+        encounterRate: 0.02,
+        pool: ['xingxing'],
+        bgTex: 'battle/field',
+    };
+
+    static tianshan: MapDef = {
+        id: 'tianshan',
+        name: '天山',
+        cols: 16, rows: 12,
+        ground: [
+            '3333333333333333',
+            '3000000000000003',
+            '3000AAAAAAAA0003',
+            '300A00000000A003',
+            '300A00000000A003',
+            '3000000000000003',
+            '3000000000000003',
+            '300AA000000AA003',
+            '300A00000000A003',
+            '3000000000000003',
+            '3000000000000003',
+            '3333333333333333',
+        ],
+        npcs: [
+            { id: 'stone', name: '石碑', x: 7, y: 5, dir: 'down', dialogue: 'dijiang_before' },
+        ],
+        portals: [
+            { x: 1, y: 6, mapId: 'zhaoyao', tx: 15, ty: 6, dir: 'left' },
+        ],
+        encounters: [
+            { x: 12, y: 6, beastIds: ['dijiang'], once: true, winFlag: 'dijiang_down' },
+        ],
+        encounterRate: 0,
+        pool: [],
+        bgTex: 'battle/cave',
     };
 
     static cave: MapDef = {
@@ -141,7 +210,7 @@ export class MapsData {
         bgTex: 'battle/cave',
     };
 
-    static all: MapDef[] = [MapsData.home, MapsData.qingqiu, MapsData.wild, MapsData.cave];
+    static all: MapDef[] = [MapsData.home, MapsData.qingqiu, MapsData.wild, MapsData.zhaoyao, MapsData.tianshan, MapsData.cave];
 
     private static map = new Map<string, MapDef>(MapsData.all.map(m => [m.id, m]));
 

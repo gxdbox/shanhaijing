@@ -1,0 +1,16 @@
+{
+  "ver": "0.0.1",
+  "importer": "*",
+  "imported": true,
+  "uuid": "cba2ccb2-1496-43b2-9a2b-51cc9323b1d3",
+  "files": [
+    ".png"
+  ],
+  "subMetas": {},
+  "userData": {
+    "type": "sprite-frame",
+    "fixAlphaTransparencyArtifacts": false,
+    "hasAlpha": true,
+    "redirect": "cba2ccb2-1496-43b2-9a2b-51cc9323b1d3@6c48a"
+  }
+}
