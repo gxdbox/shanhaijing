@@ -62,6 +62,7 @@ export class MapsData {
         portals: [
             { x: 10, y: 1, mapId: 'wild', tx: 13, ty: 16, dir: 'up' },
             { x: 3, y: 6, mapId: 'home', tx: 5, ty: 7, dir: 'up' },
+            { x: 20, y: 12, mapId: 'cave', tx: 6, ty: 12, dir: 'right' },
         ],
         encounters: [],
         encounterRate: 0,
@@ -105,7 +106,7 @@ export class MapsData {
         encounters: [
             { x: 13, y: 16, beastIds: ['zhi'], once: true },
         ],
-        encounterRate: 0.015,
+        encounterRate: 0.035,
         pool: ['zhi', 'xuangui', 'huanshu', 'xingxing', 'lushu', 'guanguan'],
         bgTex: 'battle/field',
     };
@@ -143,7 +144,7 @@ export class MapsData {
             { x: 15, y: 4, beastIds: ['gudiao'], once: true, winFlag: 'gudiao_down' },
             { x: 1, y: 8, beastIds: ['bo'], once: true, winFlag: 'bo_down' },
         ],
-        encounterRate: 0.02,
+        encounterRate: 0.04,
         pool: ['xingxing', 'guanguan'],
         bgTex: 'battle/zhaoyao',
     };
@@ -208,7 +209,7 @@ export class MapsData {
             { x: 14, y: 7, beastIds: ['yinglong'], once: true, winFlag: 'yinglong_down' },
             { x: 8, y: 3, beastIds: ['qiongqi'], once: true, winFlag: 'qiongqi_down' },
         ],
-        encounterRate: 0.02,
+        encounterRate: 0.04,
         pool: ['xuangui', 'huanshu'],
         bgTex: 'battle/cave',
     };

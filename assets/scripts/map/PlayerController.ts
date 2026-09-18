@@ -34,7 +34,7 @@ export class PlayerController extends Component {
     private mapView: MapView;
     /** 遇敌冷却:至少走这么多步才可能触发随机遇敌 */
     private stepsSinceEncounter = 0;
-    private static readonly MIN_STEPS = 5;
+    private static readonly MIN_STEPS = 3;
 
     setMapView(map: MapView): void {
         this.mapView = map;

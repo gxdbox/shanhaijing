@@ -156,6 +156,17 @@ export class DialogueUI extends Component {
         this.textLabel.string = '';
         this.curNode!.choices!.forEach((c, i) => {
             const btn = UIFactory.button(this.node, `　${c.text}`, 0, -185 - i * 42, 700, 36, 18);
+            // 鼠标点击选择（触屏/鼠标双支持），逻辑与键盘确认一致
+            const selectThis = () => {
+                if (!this.inChoices) return;
+                const choice = this.curNode!.choices![i];
+                this.inChoices = false;
+                this.clearChoiceButtons();
+                if (choice.next) this.playNode(DialogueData.get(choice.next));
+                else this.finishNode();
+            };
+            btn.on(Node.EventType.TOUCH_END, selectThis, this);
+            btn.on(Node.EventType.MOUSE_UP, selectThis, this);
             this.choices.push(btn);
         });
         this.paintChoices();
