@@ -25,6 +25,17 @@ export class MapView extends Component {
     private npcNodes: Node[] = [];
     private portalNodes: Node[] = [];
     private bossNodes: Node[] = [];
+    private groundLayer: Node = null;
+    /** 地面贴图缓存:瓦片名 → SpriteFrame(加载完成后重建瓦片层用) */
+    private static TEX_CACHE: Record<string, SpriteFrame> = {};
+
+    /** 地面字符 → 瓦片贴图(未列出的字符保持 Graphics 绘制:树/花/井/洞口/床) */
+    private static TILE_TEX: Record<string, string> = {
+        '0': 'tiles/grass', '1': 'tiles/path', '2': 'tiles/water', '3': 'tiles/rock',
+        '4': 'tiles/wood', '5': 'tiles/wall', '6': 'tiles/door', '9': 'tiles/bridge',
+        'A': 'tiles/cave', 'C': 'tiles/shrine', 'F': 'tiles/roof',
+        '8': 'tiles/grass', 'E': 'tiles/grass',   // 树/花的地基也是草地
+    };
 
     // —— 瓦片色板(FC 复古色)——
     private static COLORS: Record<string, Color[]> = {
@@ -85,19 +96,60 @@ export class MapView extends Component {
         const map = MapsData.get(mapId);
         this.mapDef = map;
 
-        // 清理旧 NPC、传送门和 BOSS 标记
+        // 清理旧 NPC、传送门、BOSS 标记和地面瓦片层
         for (const n of this.npcNodes) n.destroy();
         this.npcNodes = [];
         for (const n of this.portalNodes) n.destroy();
         this.portalNodes = [];
         for (const n of this.bossNodes) n.destroy();
         this.bossNodes = [];
+        if (this.groundLayer) this.groundLayer.destroy();
+        this.groundLayer = null;
 
         this.gGround.clear();
         this.paintGround();
+        this.buildGroundTiles();
         this.spawnPortals();
         this.spawnBossMarkers();
         this.spawnNpcs();
+    }
+
+    /** 地面瓦片贴图:每格一个 Sprite,盖在 Graphics 色块 fallback 之上 */
+    private buildGroundTiles(): void {
+        const map = this.mapDef;
+        const layer = new Node('groundTiles');
+        layer.layer = this.node.layer;
+        this.node.addChild(layer);
+        layer.setSiblingIndex(0);   // 压在所有角色/装饰节点之下
+        this.groundLayer = layer;
+
+        for (let gy = 0; gy < map.rows; gy++) {
+            for (let gx = 0; gx < map.cols; gx++) {
+                const texName = MapView.TILE_TEX[map.ground[gy][gx]];
+                if (!texName) continue;
+                const n = new Node(`t_${gx}_${gy}`);
+                n.layer = this.node.layer;
+                n.addComponent(UITransform).setContentSize(TILE, TILE);
+                const sp = n.addComponent(Sprite);
+                sp.sizeMode = Sprite.SizeMode.CUSTOM;
+                sp.trim = false;
+                n.setPosition(this.gridToPos(gx, gy));
+                layer.addChild(n);
+                const cached = MapView.TEX_CACHE[texName];
+                if (cached) {
+                    sp.spriteFrame = cached;
+                    continue;
+                }
+                UIFactory.loadSF(texName, sf => {
+                    if (sf && n.isValid) {
+                        MapView.TEX_CACHE[texName] = sf;
+                        sp.spriteFrame = sf;
+                    } else if (n.isValid) {
+                        n.destroy();   // 贴图缺失:保留底层 Graphics 色块
+                    }
+                });
+            }
+        }
     }
 
     private paintGround(): void {
@@ -292,6 +344,8 @@ export class MapView extends Component {
             // 已触发过的固定遇敌不再显示
             const encKey = `enc!${map.id}_${enc.x}_${enc.y}`;
             if (gm && gm.hasFlag(encKey)) continue;
+            // 剧情前置条件未满足:不显示标记(与 PlayerController 触发逻辑一致,避免"踩上去没战斗"的误导)
+            if (enc.flagKey && gm && !gm.hasFlag(enc.flagKey)) continue;
 
             const node = new Node(`boss_${enc.x}_${enc.y}`);
             node.layer = this.node.layer;
@@ -349,9 +403,9 @@ export class MapView extends Component {
             sprite.sizeMode = Sprite.SizeMode.CUSTOM;
             sprite.trim = false;
             resources.load(`textures/${def.tex}/spriteFrame`, SpriteFrame, (err, sf) => {
-                if (!err && node.isValid) {
+                if (!err && sf && node.isValid) {
                     sprite.spriteFrame = sf;
-                    node.getComponent(UITransform)!.setContentSize(56, 44);
+                    node.getComponent(UITransform)!.setContentSize(52, 52);
                 } else {
                     this.paintSimpleNpc(node, def);
                 }

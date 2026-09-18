@@ -32,6 +32,8 @@ export class DialogueUI extends Component {
 
     private pendingActions: string[] = [];
     private awaitingBattle = false;
+    /** battle 动作后未执行的剩余动作(胜利后续跑) */
+    private battleResumeActions: string[] = [];
     private ended = false;   // 对话是否已结束(供 onKey 判断)
 
     init(uiRoot: Node): void {
@@ -112,6 +114,12 @@ export class DialogueUI extends Component {
     }
 
     private playNode(node: DialogueNode): void {
+        if (!node) {
+            // next 断链保护:关闭对话回到探索,不卡 DIALOG 状态
+            console.warn('[DialogueUI] 对话节点缺失(next断链),强制关闭对话');
+            this.close();
+            return;
+        }
         this.curNode = node;
         this.lineIdx = 0;
         this.pendingActions = node.actions ? [...node.actions] : [];
@@ -216,8 +224,10 @@ export class DialogueUI extends Component {
             case 'battle': {
                 // 嵌入战斗:胜利后继续,失败由 GameRoot 处理回村并中断
                 const beastIds = arg.split(',');
-                EventBus.emit('battle:startDialogue', beastIds);
+                // 先暂存剩余动作,战斗胜利后由 onBattleWin 继续执行
                 this.awaitingBattle = true;
+                this.battleResumeActions = actions.slice(i + 1);
+                EventBus.emit('battle:startDialogue', beastIds);
                 this.node.active = false;
                 break;
             }
@@ -233,6 +243,14 @@ export class DialogueUI extends Component {
         this.awaitingBattle = false;
         this.node.active = true;
         GameManager.inst.setState(GameState.DIALOG);
+        // 先续跑 battle 动作之后的剩余动作(setFlag/save 等),再走 next
+        const rest = this.battleResumeActions;
+        this.battleResumeActions = [];
+        if (rest.length > 0) {
+            this.pendingActions = rest;
+            this.runActions(rest, 0);
+            return;
+        }
         const next = this.curNode?.next;
         if (next) {
             this.playNode(DialogueData.get(next));

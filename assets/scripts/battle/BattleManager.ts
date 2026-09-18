@@ -67,22 +67,32 @@ export class BattleManager extends Component {
     startBattle(beastIds: string[], bgTex: string, encounter: FixedEncounterDef | null = null): void {
         const gm = GameManager.inst;
         gm.setState(GameState.BATTLE);
-        this.encounter = encounter;
-        this.bgTex = bgTex;
-        this.enemies = beastIds.map(id => BeastsData.toActor(BeastsData.get(id)));
-        this.party = gm.getParty();
-        this.pendingActions = [];
-        this.curActorIdx = 0;
-        this.cmdIdx = 0;
-        this.skillIdx = 0;
-        this.targetIdx = 0;
-        this.pendingSkill = null;
-        this.buildUI();
-        this.node.active = true;
-        this.phase = 'intro';
-        const main = this.enemies[0];
-        const tab = (main.beastId && BeastsData.get(main.beastId).boss) ? 'BOSS ' : '';
-        this.setMsg(`${tab}${this.enemies.map(e => e.name).join('与')} 出现了!\n`);
+        try {
+            this.encounter = encounter;
+            this.bgTex = bgTex;
+            this.enemies = beastIds.map(id => BeastsData.toActor(BeastsData.get(id)));
+            this.party = gm.getParty();
+            this.pendingActions = [];
+            this.curActorIdx = 0;
+            this.cmdIdx = 0;
+            this.skillIdx = 0;
+            this.targetIdx = 0;
+            this.pendingSkill = null;
+            this.buildUI();
+            this.node.active = true;
+            this.phase = 'intro';
+            const main = this.enemies[0];
+            const mainDef = main && main.beastId ? BeastsData.get(main.beastId) : null;
+            const tab = (mainDef && mainDef.boss) ? 'BOSS ' : '';
+            this.setMsg(`${tab}${this.enemies.map(e => e.name).join('与')} 出现了!\n`);
+        } catch (e) {
+            // 战斗初始化异常:回滚到探索态,避免"状态在战斗但画面无战斗"的硬卡死
+            console.error('[BattleManager] 战斗初始化失败,已回滚到探索状态', e);
+            this.phase = 'off';
+            this.node.active = false;
+            this.clearUI();
+            gm.setState(GameState.EXPLORE);
+        }
     }
 
     private endBattle(win: boolean): void {
@@ -90,18 +100,23 @@ export class BattleManager extends Component {
         this.node.active = false;
         this.clearUI();
         const gm = GameManager.inst;
-        if (win) {
-            if (this.encounter?.winFlag) gm.addFlag(this.encounter.winFlag);
-            // 固定遇敌:胜利后才写入"已触发"标记 → 战败可重战,BOSS 不会消失
-            if (this.encounter?.once) {
-                const mapId = gm.curMapId;
-                gm.addFlag(`enc!${mapId}_${this.encounter.x}_${this.encounter.y}`);
+        // 先恢复探索状态再存档/广播:存档异常不会把玩家永久卡在 BATTLE 态
+        gm.setState(GameState.EXPLORE);
+        try {
+            if (win) {
+                if (this.encounter?.winFlag) gm.addFlag(this.encounter.winFlag);
+                // 固定遇敌:胜利后才写入"已触发"标记 → 战败可重战,BOSS 不会消失
+                if (this.encounter?.once) {
+                    const mapId = gm.curMapId;
+                    gm.addFlag(`enc!${mapId}_${this.encounter.x}_${this.encounter.y}`);
+                }
             }
+            gm.save();
+        } catch (e) {
+            console.error('[BattleManager] 战后存档失败(不影响继续游戏)', e);
         }
-        gm.save();
         EventBus.emit(GEvent.BATTLE_END, { win });
         EventBus.emit('battle:ended', { win, encounter: this.encounter });
-        gm.setState(GameState.EXPLORE);
     }
 
     // ==================== UI 构建 ====================

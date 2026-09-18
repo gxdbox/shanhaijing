@@ -76,6 +76,30 @@ export class GameRoot extends Component {
     update(_dt: number): void {
         if (this.player) this.player.tick(_dt);
         if (this.mapView) this.mapView.followCamera();
+        this.stuckWatchdog(_dt);
+    }
+
+    /**
+     * 卡死自愈看门狗:状态机与 UI 不一致持续超时 → 强制恢复探索态。
+     * 防止"状态在战斗/对话但对应界面没显示"导致玩家永久动不了(只能刷新才能好)。
+     */
+    private stuckT = 0;
+    private stuckWatchdog(dt: number): void {
+        const s = this.gm.state;
+        let mismatch = false;
+        if (s === GameState.BATTLE && !this.battle.node.active) mismatch = true;
+        else if (s === GameState.DIALOG && !this.dialogue.node.active && !this.battle.node.active) mismatch = true;
+        else if (s === GameState.TRANSITION) mismatch = true;   // 切图是同步的,停在 TRANSITION 即异常
+        if (mismatch) {
+            this.stuckT += dt;
+            if (this.stuckT > 1.5) {
+                console.warn(`[GameRoot] 检测到卡死(state=${s}但界面无对应UI),自动恢复探索态`);
+                this.gm.setState(GameState.EXPLORE);
+                this.stuckT = 0;
+            }
+        } else {
+            this.stuckT = 0;
+        }
     }
 
     onDestroy(): void {

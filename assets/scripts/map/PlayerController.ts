@@ -1,4 +1,4 @@
-import { _decorator, Color, Component, Graphics, Node, sys, tween, Vec3, UITransform } from 'cc';
+import { _decorator, Color, Component, Graphics, Node, resources, Sprite, SpriteFrame, sys, tween, Vec3, UITransform } from 'cc';
 import { MapView, TILE } from './MapView';
 import { GameManager, GameState } from '../core/GameManager';
 import { EventBus, GEvent } from '../core/EventBus';
@@ -28,6 +28,7 @@ export class PlayerController extends Component {
     sprinting = sys.isMobile;  // 移动端默认冲刺(无Shift键)
     private holdDir: Dir | null = null;
     private gfx: Graphics;
+    private texSprite: Sprite | null = null;   // 主角贴图(加载成功后隐藏 Graphics 绘制)
     private animT = 0;
     private lastFrame = -1;
     private mapView: MapView;
@@ -71,8 +72,9 @@ export class PlayerController extends Component {
         const npc = this.mapView.mapDef.npcs.find(n => n.x === tx && n.y === ty);
         if (npc) {
             const gm = GameManager.inst;
-            gm.setState(GameState.DIALOG);
             const nodeId = DialogueData.getNpcEntry(npc.dialogue);
+            if (!nodeId) return;   // 对话入口缺失:不切 DIALOG 态,避免卡死
+            gm.setState(GameState.DIALOG);
             EventBus.emit('ui:showDialogue', nodeId);
         }
     }
@@ -161,9 +163,17 @@ export class PlayerController extends Component {
         EventBus.emit(GEvent.PLAYER_MOVED, this.gx, this.gy);
     }
 
-    /** 像素小人绘制(2 帧走路) */
+    /** 像素小人绘制(2 帧走路);贴图就绪则只维护朝向/踏步 */
     private paintPlayer(): void {
+        if (this.texSprite && this.texSprite.isValid) {
+            const step = (this.moving && Math.floor(this.animT * 8) % 2 === 1) ? 1 : 0;
+            const stepY = this.moving ? (step ? 2 : -2) : 0;
+            this.texSprite.node.setScale(this.facing === 'left' ? -1 : 1, 1, 1);
+            this.texSprite.node.setPosition(0, stepY, 0);
+            return;
+        }
         const g = this.gfx;
+        if (!g || !g.isValid) return;
         g.clear();
         const step = (this.moving && Math.floor(this.animT * 8) % 2 === 1) ? 1 : 0;
         const stepY = this.moving ? (step ? 2 : -2) : 0;
@@ -220,5 +230,22 @@ export class PlayerController extends Component {
     onLoad(): void {
         const g = this.getComponent(Graphics) || this.node.addComponent(Graphics);
         this.gfx = g;
+        // 主角贴图:加载成功则替代程序化绘制(失败保留 Graphics 小人为 fallback)
+        const texNode = new Node('tex');
+        texNode.layer = this.node.layer;
+        texNode.addComponent(UITransform).setContentSize(44, 44);
+        this.node.addChild(texNode);
+        const sp = texNode.addComponent(Sprite);
+        sp.sizeMode = Sprite.SizeMode.CUSTOM;
+        sp.trim = false;
+        resources.load('textures/player/axuan/spriteFrame', SpriteFrame, (err, sf) => {
+            if (!err && sf && texNode.isValid) {
+                sp.spriteFrame = sf;
+                this.texSprite = sp;
+                this.gfx.enabled = false;
+            } else {
+                texNode.destroy();
+            }
+        });
     }
 }

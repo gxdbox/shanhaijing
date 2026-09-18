@@ -17,7 +17,30 @@ export class PixelBeasts {
             case 'jiuwei': this.drawJiuwei(g, u); break;
             case 'yinglong': this.drawYinglong(g, u); break;
             case 'qiongqi': this.drawQiongqi(g, u); break;
+            default: this.drawGeneric(g, u); break;   // 新异兽立绘加载完成前的通用剪影,避免"隐身"
         }
+        g.fill();
+    }
+
+    /** 通用异兽剪影(无专属画法时的占位) */
+    private static drawGeneric(g: Graphics, u: number): void {
+        // 身体
+        g.fillColor = new Color(96, 76, 60, 255);
+        g.rect(-9 * u, -12 * u, 18 * u, 16 * u);
+        g.fill();
+        // 头
+        g.fillColor = new Color(120, 96, 74, 255);
+        g.rect(-6 * u, 2 * u, 13 * u, 10 * u);
+        g.fill();
+        // 眼
+        g.fillColor = new Color(255, 230, 120, 255);
+        g.rect(-3 * u, 6 * u, 3 * u, 3 * u);
+        g.rect(3 * u, 6 * u, 3 * u, 3 * u);
+        g.fill();
+        // 脚
+        g.fillColor = new Color(70, 56, 44, 255);
+        g.rect(-8 * u, -15 * u, 5 * u, 3 * u);
+        g.rect(3 * u, -15 * u, 5 * u, 3 * u);
         g.fill();
     }
 

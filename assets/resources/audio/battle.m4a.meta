@@ -1,9 +1,10 @@
 {
-  "ver": "0.0.1",
-  "importer": "*",
+  "ver": "1.0.0",
+  "importer": "audio-clip",
   "imported": true,
   "uuid": "a7e3e6c4-c8f6-49f6-8628-cafba3e600e4",
   "files": [
+    ".json",
     ".m4a"
   ],
   "subMetas": {},

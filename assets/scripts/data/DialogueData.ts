@@ -314,7 +314,12 @@ export class DialogueData {
 
     static getNpcEntry(npcId: string): string {
         const entries = this.npcEntries[npcId];
-        if (!entries) return 'mother_go';
+        if (!entries) {
+            // 兼容新式写法:dialogue 字段直接给节点名(xingxing_talk 等)
+            if (this.nodes[npcId]) return npcId;
+            console.warn('[DialogueData] 找不到对话入口:', npcId);
+            return '';
+        }
         const gm = GameManager.inst;
         for (const e of entries) {
             if (e.cond === undefined) return e.node;
