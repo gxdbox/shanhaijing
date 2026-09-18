@@ -22,7 +22,7 @@ export class MapsData {
             '5555565555',
         ],
         npcs: [
-            { id: 'mother', name: '母亲', x: 6, y: 3, dir: 'down', dialogue: 'mother' },
+            { id: 'mother', name: '母亲', x: 6, y: 3, dir: 'down', dialogue: 'mother', tex: 'npc/mother' },
         ],
         portals: [
             { x: 5, y: 8, mapId: 'qingqiu', tx: 3, ty: 7, dir: 'down' },
@@ -56,8 +56,8 @@ export class MapsData {
             '3333333333333333333333',
         ],
         npcs: [
-            { id: 'grandpa', name: '爷爷', x: 10, y: 13, dir: 'down', dialogue: 'grandpa' },
-            { id: 'elder', name: '长老', x: 19, y: 6, dir: 'down', dialogue: 'elder' },
+            { id: 'grandpa', name: '爷爷', x: 10, y: 13, dir: 'down', dialogue: 'grandpa', tex: 'npc/grandpa' },
+            { id: 'elder', name: '长老', x: 19, y: 6, dir: 'down', dialogue: 'elder', tex: 'npc/elder' },
         ],
         portals: [
             { x: 10, y: 1, mapId: 'wild', tx: 13, ty: 16, dir: 'up' },
@@ -66,7 +66,7 @@ export class MapsData {
         encounters: [],
         encounterRate: 0,
         pool: [],
-        bgTex: 'battle/field',
+        bgTex: 'battle/qingqiu',
     };
 
     static wild: MapDef = {
@@ -94,7 +94,8 @@ export class MapsData {
             '33333333333310333333333333',
         ],
         npcs: [
-            { id: 'jiuwei_npc', name: '九尾狐', x: 16, y: 10, dir: 'down', dialogue: 'jiuwei_npc' },
+            { id: 'jiuwei_npc', name: '九尾狐', x: 16, y: 10, dir: 'down', dialogue: 'jiuwei_npc', tex: 'beasts/jiuwei' },
+            { id: 'guanguan', name: '灌灌', x: 4, y: 8, dir: 'down', dialogue: 'guanguan', tex: 'beasts/guanguan' },
         ],
         portals: [
             { x: 13, y: 17, mapId: 'qingqiu', tx: 10, ty: 2, dir: 'down' },
@@ -105,7 +106,7 @@ export class MapsData {
             { x: 13, y: 16, beastIds: ['zhi'], once: true },
         ],
         encounterRate: 0.015,
-        pool: ['zhi', 'xuangui', 'huanshu', 'xingxing', 'lushu'],
+        pool: ['zhi', 'xuangui', 'huanshu', 'xingxing', 'lushu', 'guanguan'],
         bgTex: 'battle/field',
     };
 
@@ -128,8 +129,8 @@ export class MapsData {
             '333333333333333333',
         ],
         npcs: [
-            { id: 'xingxing', name: '狌狌', x: 6, y: 5, dir: 'down', dialogue: 'xingxing_talk' },
-            { id: 'jingwei', name: '精卫', x: 13, y: 9, dir: 'down', dialogue: 'jingwei_meet' },
+            { id: 'xingxing', name: '狌狌', x: 6, y: 5, dir: 'down', dialogue: 'xingxing_talk', tex: 'beasts/xingxing' },
+            { id: 'jingwei', name: '精卫', x: 13, y: 9, dir: 'down', dialogue: 'jingwei_meet', tex: 'npc/jingwei' },
         ],
         portals: [
             { x: 8, y: 10, mapId: 'wild', tx: 2, ty: 2, dir: 'down' },
@@ -139,10 +140,12 @@ export class MapsData {
             { x: 10, y: 8, beastIds: ['lushu'], once: true, winFlag: 'lushu_down' },
             { x: 4, y: 3, beastIds: ['zheng'], once: true, winFlag: 'zheng_down' },
             { x: 13, y: 2, beastIds: ['bifang'], once: true, winFlag: 'bifang_down' },
+            { x: 15, y: 4, beastIds: ['gudiao'], once: true, winFlag: 'gudiao_down' },
+            { x: 1, y: 8, beastIds: ['bo'], once: true, winFlag: 'bo_down' },
         ],
         encounterRate: 0.02,
-        pool: ['xingxing'],
-        bgTex: 'battle/field',
+        pool: ['xingxing', 'guanguan'],
+        bgTex: 'battle/zhaoyao',
     };
 
     static tianshan: MapDef = {
@@ -164,7 +167,7 @@ export class MapsData {
             '3333333333333333',
         ],
         npcs: [
-            { id: 'stone', name: '石碑', x: 7, y: 5, dir: 'down', dialogue: 'dijiang_before' },
+            { id: 'stone', name: '石碑', x: 7, y: 5, dir: 'down', dialogue: 'dijiang_before', tex: 'npc/stone' },
         ],
         portals: [
             { x: 1, y: 6, mapId: 'zhaoyao', tx: 15, ty: 6, dir: 'left' },
@@ -174,7 +177,7 @@ export class MapsData {
         ],
         encounterRate: 0,
         pool: [],
-        bgTex: 'battle/cave',
+        bgTex: 'battle/tianshan',
     };
 
     static cave: MapDef = {

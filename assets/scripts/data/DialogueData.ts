@@ -219,6 +219,61 @@ export class DialogueData {
             ],
             actions: ['battle:dijiang'],
         },
+
+        // ============ 第3期 青丘双灵・南岭西荒（日报开发）============
+        guanguan_meet: {
+            id: 'guanguan_meet',
+            lines: [
+                { speaker: '', text: '一只青灰色的肥鸟扑棱着翅膀落在枝头,头顶羽毛炸起,冲你大声呵斥——' },
+                { speaker: '灌灌', text: '呵!呵!——(吵吵嚷嚷,像是在骂人)' },
+                { speaker: '阿玄', text: '这是……灌灌?《山海经》说,佩其羽者不惑。' },
+                { speaker: '灌灌', text: '呵!(点头,得意地抖了抖青羽)' },
+                { speaker: '阿玄', text: '九尾狐被穷奇所惑,正缺你这样的清心羽。你愿意助我么?' },
+                { speaker: '灌灌', text: '呵!(跳到阿玄肩头,蹭了蹭)' },
+                { speaker: '', text: '☆ 灌灌 加入了队伍! ☆' },
+            ],
+            actions: ['setFlag:guanguan_joined', 'getBeast:guanguan', 'heal', 'save'],
+        },
+        guanguan_talk: {
+            id: 'guanguan_talk',
+            lines: [
+                { speaker: '灌灌', text: '呵!呵!(扑棱着翅膀,昂首挺胸——仿佛在说:跟着我,不会错)' },
+                { speaker: '阿玄', text: '哈哈,好好好,知道你厉害了。走,我们去帮九尾狐! ' },
+            ],
+        },
+        elder_shuangling: {
+            id: 'elder_shuangling',
+            lines: [
+                { speaker: '长老', text: '阿玄,你可知道——青丘之山,一兽一鸟,同守千年。' },
+                { speaker: '阿玄', text: '是九尾狐……和那只总像在骂人的青鸟?' },
+                { speaker: '长老', text: '九尾狐食之可辟蛊,灌灌之羽佩之不惑。蛊与惑,正是穷奇最得意的两门手段。' },
+                { speaker: '阿玄', text: '所以穷奇才先夺九尾一尾,又封了灌灌的羽!' },
+                { speaker: '长老', text: '去吧。取回灌灌之羽,九尾狐便再不会被穷奇的邪音所惑。' },
+            ],
+            actions: ['setFlag:met_shuangling', 'save'],
+        },
+        gudiao_meet: {
+            id: 'gudiao_meet',
+            lines: [
+                { speaker: '', text: '泽更水边,忽然传来一阵婴儿啼哭,凄厉渗人——' },
+                { speaker: '阿玄', text: '这哭声……不对劲。' },
+                { speaker: '蛊雕', text: '(破水而出)呜哇——呜哇——' },
+                { speaker: '阿玄', text: '果然是蛊雕!《山海经》说它"其音如婴儿之音,是食人"!' },
+                { speaker: '蛊雕', text: '(露出白骨双角,血目圆睁,扑了过来)' },
+            ],
+            actions: ['battle:gudiao'],
+        },
+        bo_meet: {
+            id: 'bo_meet',
+            lines: [
+                { speaker: '', text: '山道尽头,一匹白马黑尾的独角灵兽傲然而立,虎爪踏地,鸣声如鼓——' },
+                { speaker: '阿玄', text: '驳!《山海经》说它食虎豹,可以御兵!' },
+                { speaker: '驳', text: '(鼓声般低鸣)……' },
+                { speaker: '阿玄', text: '它脚下……是刚被它撕碎的虎豹残骸。它在守这条路。' },
+                { speaker: '阿玄', text: '要过去,就得先过它这一关!' },
+            ],
+            actions: ['battle:bo'],
+        },
     };
 
     /**
@@ -241,7 +296,8 @@ export class DialogueData {
         elder: [
             { cond: 'game_clear', node: 'elder_clear' },
             { cond: 'qiongqi_down', node: 'elder_done' },
-            { cond: 'got_book', node: 'elder_remind' },
+            { cond: 'met_shuangling', node: 'elder_remind' },
+            { cond: 'got_book', node: 'elder_shuangling' },
             { node: 'elder_give' },
         ],
         jiuwei_npc: [
@@ -249,6 +305,10 @@ export class DialogueData {
             { cond: 'met_jiuwei', node: 'jiuwei_again' },
             { cond: 'got_book', node: 'jiuwei_meet' },
             { node: 'jiuwei_keep' },
+        ],
+        guanguan: [
+            { cond: 'guanguan_joined', node: 'guanguan_talk' },
+            { node: 'guanguan_meet' },
         ],
     };
 

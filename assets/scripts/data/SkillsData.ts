@@ -111,6 +111,28 @@ export class SkillsData {
             type: 'magic', power: 1.4, mpCost: 12, target: 'allEnemies',
             learnBeast: 'dijiang',
         },
+        // ===== 第3期 异兽技能（日报开发）=====
+        {
+            id: 'qingxin',
+            name: '清心羽',
+            desc: '青丘灵羽化光环绕全队,恢复生命并提升防御。',
+            type: 'heal', power: 12, mpCost: 7, target: 'ally', buffDef: 3,
+            learnBeast: 'guanguan',
+        },
+        {
+            id: 'yingti',
+            name: '婴啼',
+            desc: '发出婴儿般的啼哭,诱使一个敌人失神并被水噬。',
+            type: 'magic', power: 1.1, mpCost: 6, target: 'enemy',
+            learnBeast: 'gudiao',
+        },
+        {
+            id: 'yubing',
+            name: '御兵阵',
+            desc: '驳昂首鸣鼓,鼓声如壁垒,自身防御大幅提升。',
+            type: 'buff', power: 0, mpCost: 10, target: 'self', buffDef: 6,
+            learnBeast: 'bo',
+        },
     ];
 
     private static map = new Map<string, SkillDef>(

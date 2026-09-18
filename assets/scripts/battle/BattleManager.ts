@@ -664,6 +664,12 @@ export class BattleManager extends Component {
                 } else if (s.type === 'magic') {
                     amount = Math.max(1, Math.floor(act.actor.atk * s.power * (0.85 + Math.random() * 0.3) - target.def * 0.4));
                     target.hp = Math.max(0, target.hp - amount);
+                } else if (s.type === 'buff') {
+                    // 增益：提升目标防御（buffDef），持续本场战斗（简化：直接加防）
+                    isHeal = true;
+                    amount = s.buffDef || 3;
+                    target.def += amount;
+                    target.maxHp = target.maxHp; // 无副作用
                 } else {
                     amount = Math.max(1, Math.floor(act.actor.atk * s.power - target.def));
                     target.hp = Math.max(0, target.hp - amount);

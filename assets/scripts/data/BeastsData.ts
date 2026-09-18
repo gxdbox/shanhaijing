@@ -128,6 +128,40 @@ export class BeastsData {
             tex: 'beasts/dijiang', skills: ['hundunwu'],
             boss: true,
         },
+        // ===== 第3期 青丘・南岭・西荒（日报开发）=====
+        {
+            id: 'guanguan',
+            name: '灌灌',
+            kind: '鸟',
+            quote: '青丘之山:有鸟焉,其状如鸠,其音若呵,名曰灌灌,佩之不惑。',
+            desc: '青丘的呵鸣灵鸟,羽佩于身可不受迷惑,与九尾狐同栖一山。',
+            maxHp: 24, maxMp: 14, atk: 10, def: 5, spd: 9,
+            exp: 30, gold: 12,
+            tex: 'beasts/guanguan', skills: ['qingxin'],
+            catchable: true,
+        },
+        {
+            id: 'gudiao',
+            name: '蛊雕',
+            kind: '兽',
+            quote: '鹿吴之山:水有兽焉,名曰蛊雕,其状如雕而有角,其音如婴儿之音,是食人。',
+            desc: '水陆两栖的猛禽,头顶弯角,以婴儿啼哭诱食行人,食人恶兽。',
+            maxHp: 62, maxMp: 20, atk: 19, def: 8, spd: 11,
+            exp: 110, gold: 70,
+            tex: 'beasts/gudiao', skills: ['yingti'],
+            catchable: true,
+        },
+        {
+            id: 'bo',
+            name: '驳',
+            kind: '兽',
+            quote: '中曲之山:有兽焉,其状如马而白身黑尾,一角,虎牙爪,音如鼓音,其名曰驳,是食虎豹,可以御兵。',
+            desc: '白身黑尾的独角灵马,虎牙虎爪,鸣声如鼓,以虎豹为食,可御兵灾。',
+            maxHp: 68, maxMp: 18, atk: 16, def: 13, spd: 7,
+            exp: 120, gold: 80,
+            tex: 'beasts/bo', skills: ['yubing'],
+            catchable: true,
+        },
     ];
 
     private static map = new Map<string, BeastDef>(
