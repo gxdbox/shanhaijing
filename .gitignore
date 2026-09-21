@@ -8,3 +8,7 @@ node_modules/
 .DS_Store
 # git worktree（kanban 任务临时工作区）
 .worktrees/
+
+# 浏览器端到端验证/诊断截图（测试产物，不入库）
+verify_*.png
+temp_verify*.png

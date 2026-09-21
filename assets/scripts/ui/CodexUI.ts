@@ -23,7 +23,7 @@ export class CodexUI extends Component {
 
         const panel = UIFactory.panel(this.node, 0, 0, 920, 560, { fill: undefined, border: undefined });
         if (panel) {
-            UIFactory.label(panel, '《山海经》图鉴', 26, new Vec3(0, 245), undefined, { bold: true, outline: true });
+            UIFactory.label(panel, '《山海经》图鉴', 26, new Vec3(0, 228), undefined, { bold: true, outline: true });
             UIFactory.label(panel, '↑↓ 翻页　X 关闭', 14, new Vec3(0, -255), undefined, { outline: true });
         }
         this.listRoot = new Node('list');

@@ -1,4 +1,4 @@
-import { _decorator, Color, Component, Graphics, input, Input, EventKeyboard, KeyCode, Label, Node, resources, Sprite, SpriteFrame, tween, UITransform, UIOpacity, Vec3 } from 'cc';
+import { _decorator, Color, Component, Graphics, input, Input, EventKeyboard, EventMouse, KeyCode, Label, Node, resources, Sprite, SpriteFrame, tween, UITransform, UIOpacity, Vec3 } from 'cc';
 import { ActorStats, FixedEncounterDef, SkillDef } from '../core/GameData';
 import { BeastsData } from '../data/BeastsData';
 import { SkillsData } from '../data/SkillsData';
@@ -58,6 +58,8 @@ export class BattleManager extends Component {
         this.node.addComponent(UITransform).setContentSize(960, 600);
         this.node.active = false;
         input.on(Input.EventType.KEY_DOWN, this.onKeyDown, this);
+        input.on(Input.EventType.MOUSE_DOWN, this.onPointer, this);
+        input.on(Input.EventType.TOUCH_START, this.onPointer, this);
     }
 
     get active(): boolean { return this.node.active; }
@@ -229,18 +231,25 @@ export class BattleManager extends Component {
 
         // 底部窗口
         this.panel = UIFactory.panel(this.node, 0, -220, 920, 155);
-        this.msgLabel = UIFactory.label(this.panel, '', 18, new Vec3(0, 50), undefined, { anchorX: 0, anchorY: 1 });
+        this.msgLabel = UIFactory.label(this.panel, '', 18, new Vec3(0, 38), undefined, { anchorX: 0, anchorY: 1 });
         this.msgLabel.horizontalAlign = Label.HorizontalAlign.LEFT;
         this.msgLabel.verticalAlign = Label.VerticalAlign.TOP;
         (this.msgLabel.node.getComponent(UITransform)!).setContentSize(880, 65);
         this.partyLabel = UIFactory.label(this.node, '', 15, new Vec3(-420, -130), new Color(210, 230, 210, 255), { anchorX: 0, anchorY: 1 });
         (this.partyLabel.node.getComponent(UITransform)!).setContentSize(880, 50);
 
-        // 指令菜单
+        // 指令菜单（鼠标/触屏点击与键盘操作等效）
         this.cmdButtons = [];
         const cmds = ['攻击', '技能', '收服', '防御', '逃跑'];
         cmds.forEach((c, i) => {
             const btn = UIFactory.button(this.panel, c, -340 + i * 170, -30, 155, 48, 18);
+            const selectThis = () => {
+                if (this.phase !== 'menu') return;
+                this.cmdIdx = i;
+                this.onCmdConfirm();
+            };
+            btn.on(Node.EventType.TOUCH_END, selectThis, this);
+            btn.on(Node.EventType.MOUSE_UP, selectThis, this);
             this.cmdButtons.push(btn);
         });
         this.paintAll();
@@ -259,16 +268,13 @@ export class BattleManager extends Component {
     /** 刷新全部按钮选中态 */
     private paintAll(): void {
         this.cmdButtons.forEach((btn, i) => {
-            const g = btn.getComponent(Graphics);
-            UIFactory.paintButton(g, 155, 48, this.phase === 'menu' && i === this.cmdIdx);
+            UIFactory.paintButtonState(btn, 155, 48, this.phase === 'menu' && i === this.cmdIdx);
         });
         this.skillButtons.forEach((btn, i) => {
-            const g = btn.getComponent(Graphics);
-            UIFactory.paintButton(g, 300, 40, this.phase === 'skillMenu' && i === this.skillIdx);
+            UIFactory.paintButtonState(btn, 300, 40, this.phase === 'skillMenu' && i === this.skillIdx);
         });
         this.targetBtns.forEach((btn, i) => {
-            const g = btn.getComponent(Graphics);
-            UIFactory.paintButton(g, 120, 40, this.phase === 'target' && i === this.targetIdx);
+            UIFactory.paintButtonState(btn, 120, 40, this.phase === 'target' && i === this.targetIdx);
         });
     }
 
@@ -403,6 +409,16 @@ export class BattleManager extends Component {
         }
     }
 
+    /** 鼠标点击/触摸:intro 与胜负结算幕用点击推进(菜单幕由按钮处理,避免双触发) */
+    private onPointer(_event: EventMouse | any): void {
+        if (!this.node.active) return;
+        if (this.phase === 'intro') {
+            this.openMenu();
+        } else if (this.phase === 'victory' || this.phase === 'defeat') {
+            this.endBattle(this.phase === 'victory');
+        }
+    }
+
     // ==================== 指令处理 ====================
 
     private openMenu(): void {
@@ -483,6 +499,13 @@ export class BattleManager extends Component {
         skills.forEach((s, i) => {
             const y = 40 - i * 46;
             const btn = UIFactory.button(this.panel, `${s.name}(${s.mpCost}MP)`, 130, y, 300, 40, 16);
+            const selectThis = () => {
+                if (this.phase !== 'skillMenu') return;
+                this.skillIdx = i;
+                this.onSkillConfirm();
+            };
+            btn.on(Node.EventType.TOUCH_END, selectThis, this);
+            btn.on(Node.EventType.MOUSE_UP, selectThis, this);
             this.skillButtons.push(btn);
         });
         this.paintAll();
@@ -521,6 +544,14 @@ export class BattleManager extends Component {
         this.enemies.forEach((e, i) => {
             if (e.hp <= 0) return;
             const btn = UIFactory.button(this.panel, e.name, -220 + i * 150, 40, 120, 40, 14);
+            const btnIdx = this.targetBtns.length;
+            const selectThis = () => {
+                if (this.phase !== 'target') return;
+                this.targetIdx = btnIdx;
+                this.onTargetConfirm();
+            };
+            btn.on(Node.EventType.TOUCH_END, selectThis, this);
+            btn.on(Node.EventType.MOUSE_UP, selectThis, this);
             this.targetBtns.push(btn);
         });
         this.setMsg(`选择目标:`);

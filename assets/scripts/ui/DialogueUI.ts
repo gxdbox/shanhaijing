@@ -56,7 +56,7 @@ export class DialogueUI extends Component {
         this.textNode.setPosition(0, -220);
         this.node.addChild(this.textNode);
         // 文字锚点=左上,从面板内顶部开始排列
-        this.textLabel = UIFactory.label(this.textNode, '', 20, new Vec3(-410, 50), undefined, { anchorX: 0, anchorY: 1 });
+        this.textLabel = UIFactory.label(this.textNode, '', 20, new Vec3(-410, 30), undefined, { anchorX: 0, anchorY: 1 });
         this.textLabel.horizontalAlign = Label.HorizontalAlign.LEFT;
         this.textLabel.verticalAlign = Label.VerticalAlign.TOP;
         (this.textLabel.node.getComponent(UITransform)!).setContentSize(820, 95);
@@ -174,8 +174,7 @@ export class DialogueUI extends Component {
 
     private paintChoices(): void {
         this.choices.forEach((btn, i) => {
-            const g = btn.getComponent(Graphics);
-            UIFactory.paintButton(g, 640, 42, i === this.choiceIdx);
+            UIFactory.paintButtonState(btn, 700, 36, i === this.choiceIdx);
         });
     }
 

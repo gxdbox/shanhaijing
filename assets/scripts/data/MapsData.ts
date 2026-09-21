@@ -139,7 +139,8 @@ export class MapsData {
         ],
         encounters: [
             { x: 10, y: 8, beastIds: ['lushu'], once: true, winFlag: 'lushu_down' },
-            { x: 4, y: 3, beastIds: ['zheng'], once: true, winFlag: 'zheng_down' },
+            // 狰:原(4,3)是树格(不可行走,红圈永远踩不到) → 移到树旁空地
+            { x: 4, y: 4, beastIds: ['zheng'], once: true, winFlag: 'zheng_down' },
             { x: 13, y: 2, beastIds: ['bifang'], once: true, winFlag: 'bifang_down' },
             { x: 15, y: 4, beastIds: ['gudiao'], once: true, winFlag: 'gudiao_down' },
             { x: 1, y: 8, beastIds: ['bo'], once: true, winFlag: 'bo_down' },

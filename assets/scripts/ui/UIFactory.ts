@@ -10,6 +10,15 @@ import { Color, Graphics, Label, Node, resources, Sprite, SpriteFrame, UITransfo
 export class UIFactory {
     // 素材缓存：防止重复加载
     private static cache: Record<string, SpriteFrame> = {};
+    /** 九宫格边框(素材像素):panel 素材实测装饰边框约 40px(930x426,深色花纹框+纯色芯)；
+     *  panel 实际使用会按自身尺寸动态收缩,避免过矮面板(如名字框 32px)内容区为负 */
+    private static readonly PANEL_INSET = 40;
+    /** 按钮素材恢复时使用的九宫格边框(需配合边框≤20px 的合格素材,否则小按钮内容区为负) */
+    private static readonly BUTTON_INSET = 30;
+    /** 按钮是否使用"清新国风"素材:当前 button.png(890x510)是整幅大图,中心有图案、
+     *  边缘渐变带超 100px,而按钮目标高仅 36~48px,SLICED 拉伸必然变形(内容区为负/图案压扁)。
+     *  暂回退 Graphics 兜底绘制,待有合格九宫格按钮素材(边框≤20px、中心均匀)再恢复。 */
+    private static readonly BUTTON_USE_TEXTURE = false;
 
     /** 异步加载 SpriteFrame（带缓存）；失败返回 null */
     static loadSF(path: string, cb: (sf: SpriteFrame | null) => void): void {
@@ -24,8 +33,19 @@ export class UIFactory {
         });
     }
 
-    /** 给节点挂 Sprite（九宫格拉伸模式，适配不同尺寸面板） */
-    static setSprite(node: Node, sf: SpriteFrame, w: number, h: number): void {
+    /**
+     * 给节点挂 Sprite（九宫格拉伸模式，适配不同尺寸面板）
+     * 注意:meta 里的九宫格 border 不会写入 sprite-frame 子资产(运行时读不到),
+     * 必须在代码层设置 inset,SLICED 才真正生效、面板/按钮拉伸不变形。
+     */
+    static setSprite(node: Node, sf: SpriteFrame, w: number, h: number, inset = 0): void {
+        if (inset > 0) {
+            sf.insetTop = sf.insetBottom = inset;
+            sf.insetLeft = sf.insetRight = inset;
+        }
+        // 素材异步加载窗口期内节点可能已被兜底 Graphics 画过,素材生效后移除,避免同节点双层绘制
+        const oldG = node.getComponent(Graphics);
+        if (oldG) node.removeComponent(oldG);
         const sp = node.getComponent(Sprite) ?? node.addComponent(Sprite);
         sp.spriteFrame = sf;
         sp.sizeMode = Sprite.SizeMode.CUSTOM;
@@ -74,11 +94,27 @@ export class UIFactory {
         const node = new Node('panel');
         node.layer = parent.layer;
         node.addComponent(UITransform).setContentSize(w, h);
-        const useImage = opts.useImage !== false;   // 默认尝试用素材
+        // 素材边框 ~40px,过矮面板(名字框 32px/图鉴条目 96px)内容区会被挤没,回退 Graphics
+        const useImage = opts.useImage !== false && Math.min(w, h) >= 100;
         if (useImage) {
             UIFactory.loadSF('ui/panel', (sf) => {
                 if (sf && node.isValid) {
-                    UIFactory.setSprite(node, sf, w, h);
+                    // 小面板按尺寸收缩 inset,保证内容区不为负
+                    const cap = Math.max(6, Math.floor(Math.min(w, h) / 2) - 4);
+                    const inset = Math.min(UIFactory.PANEL_INSET, cap);
+                    UIFactory.setSprite(node, sf, w, h, inset);
+                    // 素材中心是浅色纸面:内衬子节点叠加深蓝圆角(Sprite 与 Graphics 同节点互斥,
+                    // 必须挂子节点),保证米白文字可读、拉伸区不外露;排到兄弟最前避免盖住文字
+                    const inner = new Node('inner');
+                    inner.layer = node.layer;
+                    inner.addComponent(UITransform);
+                    node.addChild(inner);
+                    inner.setSiblingIndex(0);
+                    const g = inner.addComponent(Graphics);
+                    g.clear();
+                    g.fillColor = new Color(8, 10, 24, 205);
+                    g.roundRect(-w / 2 + inset + 2, -h / 2 + inset + 2, w - 2 * (inset + 2), h - 2 * (inset + 2), 8);
+                    g.fill();
                 } else {
                     UIFactory.paintPanelGfx(node, w, h, opts);
                 }
@@ -121,8 +157,8 @@ export class UIFactory {
         node.layer = parent.layer;
         node.addComponent(UITransform).setContentSize(w, h);
         UIFactory.loadSF('ui/button', (sf) => {
-            if (sf && node.isValid) {
-                UIFactory.setSprite(node, sf, w, h);
+            if (UIFactory.BUTTON_USE_TEXTURE && sf && node.isValid) {
+                UIFactory.setSprite(node, sf, w, h, UIFactory.BUTTON_INSET);
             } else {
                 const g = node.getComponent(Graphics) ?? node.addComponent(Graphics);
                 this.paintButton(g, w, h, false);
@@ -153,6 +189,41 @@ export class UIFactory {
             g.lineTo(-w / 2 + 8, -3);
             g.close();
             g.fill();
+        }
+    }
+
+    /**
+     * 安全刷新按钮选中态(战斗/对话选项高亮的统一入口)。
+     * 素材按钮只挂 Sprite 没有 Graphics,直接 getComponent(Graphics) 得到 null
+     * 再调 paintButton 会抛异常(战斗初始化回滚 → 战斗永远起不来)。
+     * - 素材模式:在按钮下叠加 'hl' 子节点画金色描边+三角指示;
+     * - 兜底模式:重绘 Graphics 原样式。
+     */
+    static paintButtonState(btn: Node, w: number, h: number, selected: boolean): void {
+        if (btn.getComponent(Sprite)) {
+            let hl = btn.getChildByName('hl');
+            if (!hl) {
+                hl = new Node('hl');
+                hl.layer = btn.layer;
+                hl.addComponent(UITransform);
+                btn.addChild(hl);
+            }
+            const g = hl.getComponent(Graphics) ?? hl.addComponent(Graphics);
+            g.clear();
+            if (!selected) return;
+            g.lineWidth = 3;
+            g.strokeColor = new Color(255, 230, 120, 255);
+            g.roundRect(-w / 2 + 2, -h / 2 + 2, w - 4, h - 4, 6);
+            g.stroke();
+            g.fillColor = new Color(255, 230, 120, 255);
+            g.moveTo(-w / 2 + 8, 3);
+            g.lineTo(-w / 2 + 14, 0);
+            g.lineTo(-w / 2 + 8, -3);
+            g.close();
+            g.fill();
+        } else {
+            const g = btn.getComponent(Graphics) ?? btn.addComponent(Graphics);
+            UIFactory.paintButton(g, w, h, selected);
         }
     }
 }
