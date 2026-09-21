@@ -341,9 +341,8 @@ export class MapView extends Component {
         const map = this.mapDef;
         const gm = GameManager.inst;
         for (const enc of map.encounters) {
-            // 已触发过的固定遇敌不再显示
             const encKey = `enc!${map.id}_${enc.x}_${enc.y}`;
-            if (gm && gm.hasFlag(encKey)) continue;
+            const conquered = gm && gm.hasFlag(encKey);
             // 剧情前置条件未满足:不显示标记(与 PlayerController 触发逻辑一致,避免"踩上去没战斗"的误导)
             if (enc.flagKey && gm && !gm.hasFlag(enc.flagKey)) continue;
 
@@ -356,31 +355,49 @@ export class MapView extends Component {
 
             const g = node.addComponent(Graphics);
 
-            // 红色警告光环
-            g.fillColor = new Color(200, 50, 40, 50);
-            g.circle(0, 0, 14);
-            g.fill();
+            if (conquered) {
+                // ===== 已征服:绿色 ✓ 标记(保留显示,不再消失——成就感+地图可读) =====
+                g.fillColor = new Color(30, 160, 80, 40);
+                g.circle(0, 0, 12);
+                g.fill();
+                g.strokeColor = new Color(60, 220, 120, 200);
+                g.lineWidth = 2;
+                g.circle(0, 0, 10);
+                g.stroke();
+                // ✓ 勾
+                g.strokeColor = new Color(120, 255, 170, 255);
+                g.lineWidth = 3;
+                g.moveTo(-4, -1);
+                g.lineTo(-1, 3);
+                g.lineTo(5, -4);
+                g.stroke();
+            } else {
+                // ===== 未征服:红色警告光环 + "!" =====
+                g.fillColor = new Color(200, 50, 40, 50);
+                g.circle(0, 0, 14);
+                g.fill();
 
-            g.strokeColor = new Color(255, 80, 60, 200);
-            g.lineWidth = 2;
-            g.circle(0, 0, 12);
-            g.stroke();
+                g.strokeColor = new Color(255, 80, 60, 200);
+                g.lineWidth = 2;
+                g.circle(0, 0, 12);
+                g.stroke();
 
-            // 中心“！”警告符号
-            g.fillColor = new Color(255, 240, 100, 240);
-            g.rect(-2, -2, 4, 12);  // 竖线
-            g.rect(-2, -7, 4, 4);   // 下点
-            g.fill();
+                // 中心"!"警告符号
+                g.fillColor = new Color(255, 240, 100, 240);
+                g.rect(-2, -2, 4, 12);  // 竖线
+                g.rect(-2, -7, 4, 4);   // 下点
+                g.fill();
 
-            // 呼吸动画
-            const opacity = node.addComponent(UIOpacity);
-            opacity.opacity = 230;
-            tween(opacity)
-                .to(0.8, { opacity: 100 })
-                .to(0.8, { opacity: 230 })
-                .union()
-                .repeatForever()
-                .start();
+                // 呼吸动画(仅未征服)
+                const opacity = node.addComponent(UIOpacity);
+                opacity.opacity = 230;
+                tween(opacity)
+                    .to(0.8, { opacity: 100 })
+                    .to(0.8, { opacity: 230 })
+                    .union()
+                    .repeatForever()
+                    .start();
+            }
         }
     }
 

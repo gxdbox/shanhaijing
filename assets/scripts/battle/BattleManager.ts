@@ -112,6 +112,10 @@ export class BattleManager extends Component {
                     const mapId = gm.curMapId;
                     gm.addFlag(`enc!${mapId}_${this.encounter.x}_${this.encounter.y}`);
                 }
+                // 击败的异兽全部点亮图鉴(收集盼头:打赢即可收录)
+                for (const e of this.enemies) {
+                    if (e.beastId) gm.addToDex(e.beastId);
+                }
             }
             gm.save();
         } catch (e) {
