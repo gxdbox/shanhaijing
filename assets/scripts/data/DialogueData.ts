@@ -274,6 +274,92 @@ export class DialogueData {
             ],
             actions: ['battle:bo'],
         },
+
+        // ============ DQ式设施：武器店/旅店/驿站（阶段1）============
+        shopkeeper_talk: {
+            id: 'shopkeeper_talk',
+            lines: [
+                { speaker: '铁匠', text: '欢迎光临!青丘铁匠铺,好武器助你闯荡山海!看看货?要买现在就买,不买就去别家——(!)' },
+            ],
+            choices: [
+                { text: '买青铜剑(80金,攻+4)', next: 'shop_bronze' },
+                { text: '买铁剑(220金,攻+10)', next: 'shop_iron' },
+                { text: '买玉剑(500金,攻+18)', next: 'shop_jade' },
+                { text: '买干将剑(1200金,攻+30)', next: 'shop_ganjiang' },
+                { text: '看看而已', next: '' },
+            ],
+        },
+        shop_bronze: {
+            id: 'shop_bronze',
+            lines: [
+                { speaker: '铁匠', text: '青铜剑,锋利尚可,保你砍彘不费劲!' },
+            ],
+            actions: ['buyWeapon:bronze_sword'],
+            next: 'shopkeeper_talk',
+        },
+        shop_iron: {
+            id: 'shop_iron',
+            lines: [
+                { speaker: '铁匠', text: '淬火铁剑,斩妖除魔的好伙伴!' },
+            ],
+            actions: ['buyWeapon:iron_sword'],
+            next: 'shopkeeper_talk',
+        },
+        shop_jade: {
+            id: 'shop_jade',
+            lines: [
+                { speaker: '铁匠', text: '好眼力!青丘美玉磨的剑,透灵光!' },
+            ],
+            actions: ['buyWeapon:jade_sword'],
+            next: 'shopkeeper_talk',
+        },
+        shop_ganjiang: {
+            id: 'shop_ganjiang',
+            lines: [
+                { speaker: '铁匠', text: '……这把干将剑可是镇店之宝,你可得想清楚!' },
+            ],
+            actions: ['buyWeapon:ganjiang_sword'],
+            next: 'shopkeeper_talk',
+        },
+
+        innkeeper_talk: {
+            id: 'innkeeper_talk',
+            lines: [
+                { speaker: '旅店老板', text: '远道而来辛苦了!小店歇脚,20 金币一晚,包你睡到日上三竿,体力全满!' },
+            ],
+            choices: [
+                { text: '住一晚(20金,全队回满)', next: 'inn_sleep' },
+                { text: '先不了', next: '' },
+            ],
+        },
+        inn_sleep: {
+            id: 'inn_sleep',
+            lines: [
+                { speaker: '旅店老板', text: '好嘞!客官里边请——(次日清晨)睡得真香!' },
+            ],
+            actions: ['restInn:20'],
+            next: 'innkeeper_talk',
+        },
+
+        waypoint_talk: {
+            id: 'waypoint_talk',
+            lines: [
+                { speaker: '驿丞', text: '山海驿道,通达四方。客官要去哪儿?(去过的地界随你挑)' },
+            ],
+            choices: [
+                { text: '青丘村(家)', next: 'wp_qingqiu' },
+                { text: '青丘之野', next: 'wp_wild' },
+                { text: '招摇之山', next: 'wp_zhaoyao' },
+                { text: '天山', next: 'wp_tianshan' },
+                { text: '雾隐洞', next: 'wp_cave' },
+                { text: '暂不出发', next: '' },
+            ],
+        },
+        wp_qingqiu: { id: 'wp_qingqiu', lines: [], actions: ['teleportTo:qingqiu'], next: '' },
+        wp_wild: { id: 'wp_wild', lines: [], actions: ['teleportTo:wild'], next: '' },
+        wp_zhaoyao: { id: 'wp_zhaoyao', lines: [], actions: ['teleportTo:zhaoyao'], next: '' },
+        wp_tianshan: { id: 'wp_tianshan', lines: [], actions: ['teleportTo:tianshan'], next: '' },
+        wp_cave: { id: 'wp_cave', lines: [], actions: ['teleportTo:cave'], next: '' },
     };
 
     /**
@@ -309,6 +395,15 @@ export class DialogueData {
         guanguan: [
             { cond: 'guanguan_joined', node: 'guanguan_talk' },
             { node: 'guanguan_meet' },
+        ],
+        shopkeeper: [
+            { node: 'shopkeeper_talk' },
+        ],
+        innkeeper: [
+            { node: 'innkeeper_talk' },
+        ],
+        waypoint: [
+            { node: 'waypoint_talk' },
         ],
     };
 

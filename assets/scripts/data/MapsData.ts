@@ -58,6 +58,9 @@ export class MapsData {
         npcs: [
             { id: 'grandpa', name: '爷爷', x: 10, y: 13, dir: 'down', dialogue: 'grandpa', tex: 'npc/grandpa' },
             { id: 'elder', name: '长老', x: 19, y: 6, dir: 'down', dialogue: 'elder', tex: 'npc/elder' },
+            { id: 'shopkeeper', name: '铁匠', x: 2, y: 11, dir: 'down', dialogue: 'shopkeeper' },
+            { id: 'innkeeper', name: '旅店老板', x: 20, y: 4, dir: 'down', dialogue: 'innkeeper' },
+            { id: 'waypoint', name: '驿丞', x: 1, y: 14, dir: 'down', dialogue: 'waypoint' },
         ],
         portals: [
             { x: 10, y: 1, mapId: 'wild', tx: 13, ty: 16, dir: 'up' },

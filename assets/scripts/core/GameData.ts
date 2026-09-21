@@ -60,11 +60,21 @@ export interface SaveData {
     beast: ActorStats | null;   // 已收服的随行异兽
     dex: string[];              // 图鉴已收录异兽 id
     gold: number;
+    weaponId: string;           // 当前武器
     flags: string[];
     mapId: string;
     x: number;
     y: number;
     playTime: number;
+}
+
+/** 武器定义 */
+export interface WeaponDef {
+    id: string;
+    name: string;
+    desc: string;
+    atkBonus: number;   // 攻击加成
+    price: number;      // 价格(金币)
 }
 
 /** NPC 配置 */

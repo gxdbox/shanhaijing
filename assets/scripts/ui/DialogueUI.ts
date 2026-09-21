@@ -1,6 +1,7 @@
 import { _decorator, Color, Component, Graphics, input, Input, EventKeyboard, EventMouse, KeyCode, Label, Node, UITransform, Vec3 } from 'cc';
 import { DialogueNode } from '../core/GameData';
 import { DialogueData } from '../data/DialogueData';
+import { MapsData } from '../data/MapsData';
 import { GameManager, GameState } from '../core/GameManager';
 import { EventBus, GEvent } from '../core/EventBus';
 import { UIFactory } from '../ui/UIFactory';
@@ -32,9 +33,9 @@ export class DialogueUI extends Component {
 
     private pendingActions: string[] = [];
     private awaitingBattle = false;
-    /** battle 动作后未执行的剩余动作(胜利后续跑) */
     private battleResumeActions: string[] = [];
     private ended = false;   // 对话是否已结束(供 onKey 判断)
+    private flashMsg: { text: string; cb: () => void } | null = null;  // 系统消息(购买/休息反馈)
 
     init(uiRoot: Node): void {
         this.node.layer = uiRoot.layer;
@@ -227,6 +228,31 @@ export class DialogueUI extends Component {
                 gm.healAll();
                 this.runActions(actions, i + 1);
                 break;
+            case 'buyWeapon': {
+                // 武器店:arg = 武器id,购买成功扣钱并装备
+                const r = gm.buyWeapon(arg);
+                if (r.ok) gm.save();
+                this._flashMsg(r.msg, () => this.runActions(actions, i + 1));
+                break;
+            }
+            case 'restInn': {
+                // 旅店:arg = 价格,付钱回满血蓝
+                const cost = parseInt(arg, 10) || 20;
+                const r = gm.restAtInn(cost);
+                if (r.ok) gm.save();
+                this._flashMsg(r.msg, () => this.runActions(actions, i + 1));
+                break;
+            }
+            case 'teleportTo': {
+                // 驿站:arg = mapId,传送到该地图入口(需已解锁);先关对话再传送
+                const map = MapsData.get(arg);
+                if (map) {
+                    const p = map.portals.length > 0 ? map.portals[0] : null;
+                    EventBus.emit('map:teleport', arg, p ? p.tx : Math.floor(map.cols / 2), p ? p.ty : Math.floor(map.rows / 2), 'down');
+                }
+                this.close();
+                break;
+            }
             case 'save':
                 gm.save();
                 this.runActions(actions, i + 1);
@@ -280,12 +306,26 @@ export class DialogueUI extends Component {
         this.ended = true;
         this.inChoices = false;
         this.typing = false;
+        this.flashMsg = null;
         this.arrowNode.active = false;
         this.clearChoiceButtons();
         this.node.active = false;
         this.curNode = null;
         EventBus.emit(GEvent.DIALOG_END);
         GameManager.inst.setState(GameState.EXPLORE);
+    }
+
+    /** 系统消息(购买/休息反馈):显示一句话,按确认后执行回调 */
+    private _flashMsg(text: string, cb: () => void): void {
+        this.flashMsg = { text, cb };
+        this.nameLabel.string = '♪';
+        this.fullText = text;
+        this.shownChars = text.length;
+        this.typing = false;
+        this.textLabel.string = text;
+        this.arrowNode.active = true;
+        this.inChoices = false;
+        this.clearChoiceButtons();
     }
 
     get isAwaitingBattle(): boolean { return this.awaitingBattle; }
@@ -317,6 +357,18 @@ export class DialogueUI extends Component {
             return;
         }
 
+        // 系统消息(购买/休息反馈):确认后执行回调
+        if (this.flashMsg) {
+            if (confirm) {
+                const cb = this.flashMsg.cb;
+                this.flashMsg = null;
+                this.typing = false;
+                this.arrowNode.active = false;
+                cb();
+            }
+            return;
+        }
+
         if (confirm) {
             if (this.typing) {
                 // 加速显示:直接补全
@@ -334,6 +386,15 @@ export class DialogueUI extends Component {
     private onClick(_event: EventMouse | any): void {
         if (!this.node.active || this.ended) return;
         if (this.inChoices) return;  // 选项中不响应点击,避免误触
+        // 系统消息:点击确认继续
+        if (this.flashMsg) {
+            const cb = this.flashMsg.cb;
+            this.flashMsg = null;
+            this.typing = false;
+            this.arrowNode.active = false;
+            cb();
+            return;
+        }
         if (this.typing) {
             this.shownChars = this.fullText.length;
             this.textLabel.string = this.fullText;

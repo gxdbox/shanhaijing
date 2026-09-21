@@ -1,7 +1,8 @@
-import { ActorStats, BeastDef, SaveData } from './GameData';
+import { ActorStats, BeastDef, SaveData, WeaponDef } from './GameData';
 import { BeastsData } from '../data/BeastsData';
 import { MapsData } from '../data/MapsData';
 import { SkillsData } from '../data/SkillsData';
+import { WeaponsData } from '../data/WeaponsData';
 import { EventBus, GEvent } from './EventBus';
 import { SaveManager } from './SaveManager';
 
@@ -30,6 +31,7 @@ export class GameManager {
     beast: ActorStats | null = null;   // 随行异兽伙伴
     dex: string[] = [];                // 图鉴
     gold = 0;
+    weaponId = 'wooden_sword';         // 当前武器(DQ式装备)
     flags = new Set<string>();
     playTime = 0;
 
@@ -62,6 +64,7 @@ export class GameManager {
         this.beast = null;
         this.dex = [];
         this.gold = 50;
+        this.weaponId = 'wooden_sword';
         this.flags = new Set<string>();
         this.playTime = 0;
         this.curMapId = 'home';
@@ -77,6 +80,7 @@ export class GameManager {
             this.beast = data.beast;
             this.dex = data.dex;
             this.gold = data.gold;
+            this.weaponId = data.weaponId || 'wooden_sword';
             this.flags = new Set(data.flags);
             this.playTime = data.playTime;
             this.curMapId = data.mapId;
@@ -113,6 +117,7 @@ export class GameManager {
             beast: this.beast,
             dex: this.dex,
             gold: this.gold,
+            weaponId: this.weaponId,
             flags: Array.from(this.flags),
             mapId: this.curMapId,
             x: this.spawnX,
@@ -125,6 +130,42 @@ export class GameManager {
     addGold(n: number): void {
         this.gold = Math.max(0, this.gold + n);
         EventBus.emit(GEvent.GOLD_CHANGED, this.gold);
+    }
+
+    /** 购买武器:扣金币+装备(仅能买更高阶的) */
+    buyWeapon(id: string): { ok: boolean; msg: string } {
+        const w = WeaponsData.get(id);
+        if (!w) return { ok: false, msg: '没有这把武器。' };
+        if (this.gold < w.price) return { ok: false, msg: `金币不足!(需 ${w.price})` };
+        this.gold -= w.price;
+        this.weaponId = id;
+        EventBus.emit(GEvent.GOLD_CHANGED, this.gold);
+        return { ok: true, msg: `买下「${w.name}」!攻击 +${w.atkBonus}` };
+    }
+
+    /** 当前武器 */
+    getWeapon(): WeaponDef {
+        return WeaponsData.get(this.weaponId);
+    }
+
+    /** 武器攻击加成(叠加到战斗者 atk) */
+    getWeaponBonus(): number {
+        return this.getWeapon().atkBonus;
+    }
+
+    /** 旅店休息:扣金币+全队回满 */
+    restAtInn(cost: number): { ok: boolean; msg: string } {
+        if (this.gold < cost) return { ok: false, msg: `金币不足!(需 ${cost})` };
+        this.gold -= cost;
+        this.player.hp = this.player.maxHp;
+        this.player.mp = this.player.maxMp;
+        if (this.beast) {
+            this.beast.hp = this.beast.maxHp;
+            this.beast.mp = this.beast.maxMp;
+        }
+        EventBus.emit(GEvent.GOLD_CHANGED, this.gold);
+        EventBus.emit(GEvent.PLAYER_HP_CHANGED);
+        return { ok: true, msg: '你美美地睡了一觉,体力全满!' };
     }
 
     addFlag(flag: string): void {
@@ -140,9 +181,14 @@ export class GameManager {
         return this.flags.has(flag);
     }
 
-    /** 战斗队伍:主角 + 随行异兽 */
+    /** 战斗队伍:主角(含武器加成) + 随行异兽 */
     getParty(): ActorStats[] {
-        const list: ActorStats[] = [this.player];
+        const list: ActorStats[] = [];
+        // 玩家用副本+武器加成(不污染存档数据)
+        list.push({
+            ...this.player,
+            atk: this.player.atk + this.getWeaponBonus(),
+        });
         if (this.beast) list.push(this.beast);
         return list;
     }

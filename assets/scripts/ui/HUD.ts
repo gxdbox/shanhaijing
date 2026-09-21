@@ -1,4 +1,4 @@
-import { _decorator, Component, Label, Node, UITransform, Vec3 } from 'cc';
+import { _decorator, Color, Component, Label, Node, UITransform, Vec3 } from 'cc';
 import { GameManager, GameState } from '../core/GameManager';
 import { MapsData } from '../data/MapsData';
 import { UIFactory } from '../ui/UIFactory';
@@ -14,6 +14,7 @@ export class HUD extends Component {
     private partyLabel: Label;
     private goldLabel: Label;
     private hintLabel: Label;
+    private weaponLabel: Label | null = null;
 
     init(uiRoot: Node): void {
         this.node.layer = uiRoot.layer;
@@ -41,5 +42,10 @@ export class HUD extends Component {
             lines.push(`${gm.beast.name}  HP ${Math.max(0, gm.beast.hp)}/${gm.beast.maxHp}  MP ${Math.max(0, gm.beast.mp)}/${gm.beast.maxMp}`);
         }
         this.partyLabel.string = lines.join('\n');
+        // 武器显示(右上角,金币下方)——成长反馈:让玩家看到装备变化
+        if (!this.weaponLabel) {
+            this.weaponLabel = UIFactory.label(this.node, '', 14, new Vec3(430, 256), new Color(230, 210, 160, 255), { outline: true, anchorX: 1, anchorY: 1 });
+        }
+        this.weaponLabel.string = `武器 ${gm.getWeapon().name}`;
     }
 }
