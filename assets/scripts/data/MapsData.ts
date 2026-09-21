@@ -110,7 +110,7 @@ export class MapsData {
             { x: 13, y: 16, beastIds: ['zhi'], once: true },
         ],
         encounterRate: 0.035,
-        pool: ['zhi', 'xuangui', 'huanshu', 'xingxing', 'lushu', 'guanguan'],
+        pool: ['zhi', 'xuangui', 'huanshu', 'xingxing', 'lushu', 'guanguan', 'huan', 'mengji', 'heluoyu', 'wenyao'],
         bgTex: 'battle/field',
     };
 
@@ -147,6 +147,8 @@ export class MapsData {
             { x: 13, y: 2, beastIds: ['bifang'], once: true, winFlag: 'bifang_down' },
             { x: 15, y: 4, beastIds: ['gudiao'], once: true, winFlag: 'gudiao_down' },
             { x: 1, y: 8, beastIds: ['bo'], once: true, winFlag: 'bo_down' },
+            { x: 2, y: 5, beastIds: ['shuhu'], once: true, winFlag: 'shuhu_down' },
+            { x: 16, y: 3, beastIds: ['tiangou'], once: true, winFlag: 'tiangou_down' },
         ],
         encounterRate: 0.04,
         pool: ['xingxing', 'guanguan'],
@@ -179,6 +181,9 @@ export class MapsData {
         ],
         encounters: [
             { x: 12, y: 6, beastIds: ['dijiang'], once: true, winFlag: 'dijiang_down' },
+            { x: 9, y: 9, beastIds: ['ershu'], once: true, winFlag: 'ershu_down' },
+            { x: 3, y: 2, beastIds: ['zhuhuai'], once: true, winFlag: 'zhuhuai_down' },
+            { x: 14, y: 9, beastIds: ['paoxiao'], once: true, winFlag: 'paoxiao_down' },
         ],
         encounterRate: 0,
         pool: [],

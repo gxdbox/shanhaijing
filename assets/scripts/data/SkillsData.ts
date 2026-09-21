@@ -133,6 +133,70 @@ export class SkillsData {
             type: 'buff', power: 0, mpCost: 10, target: 'self', buffDef: 6,
             learnBeast: 'bo',
         },
+        // ===== 第4-7期 日报技能落地（9/18-9/21）=====
+        {
+            id: 'fengrang',
+            name: '丰穰',
+            desc: '文鳐鱼展翼引动丰收之气,祥瑞之光护佑全队。',
+            type: 'buff', power: 0, mpCost: 8, target: 'ally', buffDef: 4,
+            learnBeast: 'wenyao',
+        },
+        {
+            id: 'baisheng',
+            name: '百声',
+            desc: '讙模仿百兽之声迷惑敌人,先声夺人重击。',
+            type: 'atk', power: 1.5, mpCost: 4, target: 'enemy',
+            learnBeast: 'huan',
+        },
+        {
+            id: 'juren',
+            name: '举人',
+            desc: '孰湖展翅将敌人高高举起,再重重摔下!',
+            type: 'atk', power: 1.8, mpCost: 8, target: 'enemy',
+            learnBeast: 'shuhu',
+        },
+        {
+            id: 'shanfu',
+            name: '善伏',
+            desc: '孟极潜伏突袭,以迅雷之势重创敌人。',
+            type: 'atk', power: 1.8, mpCost: 4, target: 'enemy',
+            learnBeast: 'mengji',
+        },
+        {
+            id: 'yuxiong',
+            name: '御凶',
+            desc: '天狗昂首长啸,为全队附加御凶护体,防御提升。',
+            type: 'buff', power: 0, mpCost: 12, target: 'ally', buffDef: 6,
+            learnBeast: 'tiangou',
+        },
+        {
+            id: 'shishen',
+            name: '十身连袭',
+            desc: '何罗鱼十身齐甩,对敌人发动多段连击。',
+            type: 'magic', power: 1.8, mpCost: 8, target: 'enemy',
+            learnBeast: 'heluoyu',
+        },
+        {
+            id: 'yubaidu',
+            name: '御百毒',
+            desc: '耳鼠展开尾羽洒下清辉,庇佑全队抵御百毒。',
+            type: 'buff', power: 0, mpCost: 12, target: 'ally', buffDef: 4,
+            learnBeast: 'ershu',
+        },
+        {
+            id: 'mingyan',
+            name: '鸣雁',
+            desc: '诸怀发出雁鸣般的吼声,震慑重创敌人。',
+            type: 'magic', power: 1.6, mpCost: 6, target: 'enemy',
+            learnBeast: 'zhuhuai',
+        },
+        {
+            id: 'taotie',
+            name: '饕餮噬',
+            desc: '狍鸮张开虎齿血口撕咬敌人,贪婪吞噬其血肉。',
+            type: 'magic', power: 2.0, mpCost: 10, target: 'enemy',
+            learnBeast: 'paoxiao',
+        },
     ];
 
     private static map = new Map<string, SkillDef>(
