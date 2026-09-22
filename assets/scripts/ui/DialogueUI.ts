@@ -243,6 +243,12 @@ export class DialogueUI extends Component {
                 this._flashMsg(r.msg, () => this.runActions(actions, i + 1));
                 break;
             }
+            case 'feedBeast': {
+                // 喂食异兽:arg = 花费,提升羁绊经验
+                const rFeed = gm.feedBeast(parseInt(arg, 10) || 30);
+                this._flashMsg(rFeed.msg, () => this.runActions(actions, i + 1));
+                break;
+            }
             case 'teleportTo': {
                 // 驿站:arg = mapId,传送到该地图入口(需已解锁);先关对话再传送
                 const map = MapsData.get(arg);

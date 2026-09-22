@@ -1,4 +1,4 @@
-import { _decorator, Component, Graphics, input, Input, EventKeyboard, KeyCode, Label, Node, UITransform, Vec3 } from 'cc';
+import { _decorator, Color, Component, Graphics, input, Input, EventKeyboard, KeyCode, Label, Node, UITransform, Vec3 } from 'cc';
 import { BeastsData } from '../data/BeastsData';
 import { GameManager, GameState } from '../core/GameManager';
 import { UIFactory } from '../ui/UIFactory';
@@ -15,6 +15,7 @@ export class CodexUI extends Component {
     private pageLabel: Label;
     private listRoot: Node;
     private open = false;
+    private progressLabel: Label;
 
     init(uiRoot: Node): void {
         this.node.layer = uiRoot.layer;
@@ -26,6 +27,8 @@ export class CodexUI extends Component {
             UIFactory.label(panel, '《山海经》图鉴', 26, new Vec3(0, 228), undefined, { bold: true, outline: true });
             UIFactory.label(panel, '↑↓ 翻页　X 关闭', 14, new Vec3(0, -255), undefined, { outline: true });
         }
+        // 图鉴收集进度(收集盼头:已收录 X/23)
+        this.progressLabel = UIFactory.label(this.node, '', 16, new Vec3(0, 195), new Color(255, 218, 110, 255), { bold: true, outline: true });
         this.listRoot = new Node('list');
         this.listRoot.layer = this.node.layer;
         this.listRoot.addComponent(UITransform).setContentSize(860, 420);
@@ -58,6 +61,10 @@ export class CodexUI extends Component {
         const start = this.page * perPage;
         const entries = gm.dex.slice(start, start + perPage);
         this.pageLabel.string = gm.dex.length === 0 ? '暂无收录' : `${start + 1}-${Math.min(start + perPage, gm.dex.length)} / ${gm.dex.length}`;
+        // 收集进度(总目标=BeastsData全部可收服异兽数)
+        const total = BeastsData.list.length;
+        const pct = total > 0 ? Math.floor(gm.dex.length / total * 100) : 0;
+        this.progressLabel.string = `已收录 ${gm.dex.length}/${total} (${pct}%) ${pct >= 100 ? '—— 异兽全图鉴达成!' : ''}`;
 
         if (gm.dex.length === 0) {
             UIFactory.label(this.listRoot, '——尚未收录异兽,击败它们吧——', 18, new Vec3(0, 100), undefined, { outline: true });

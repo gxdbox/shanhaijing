@@ -173,5 +173,26 @@ gm6.start();
 ok('旧档questId默认null', gm6.questId === null);
 ok('旧档questDone默认空', gm6.questDone.length === 0);
 
+
+// ===== 测试11：喂食系统(M4) =====
+const gm7 = new GameManager();
+gm7.newGame();
+gm7.catchBeast('zhi');
+gm7.gold = 100;
+ok('喂食成功', gm7.feedBeast(30).ok === true);
+ok('扣金币30 (100->' + gm7.gold + ')', gm7.gold === 70);
+ok('羁绊经验+3', gm7.beast.bondExp === 3);
+// 金币不足
+gm7.gold = 10;
+ok('金币不足拒绝喂食', gm7.feedBeast(30).ok === false);
+// 无伙伴
+const gm8 = new GameManager();
+gm8.newGame();
+ok('无伙伴不能喂食', gm8.feedBeast(30).ok === false);
+// 击杀记录(悬赏)
+gm7.recordKill('zhi');
+gm7.recordKill('zhi');
+ok('击杀计数=2', gm7.getBeastKillCount('zhi') === 2);
+
 console.log(`\n结果: ${pass} 通过, ${fail} 失败`);
 process.exit(fail > 0 ? 1 : 0);

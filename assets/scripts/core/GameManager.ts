@@ -280,6 +280,36 @@ export class GameManager {
         return null;
     }
 
+    /** 喂食异兽:花费金币提升羁绊经验(养成盼头) */
+    feedBeast(cost: number): { ok: boolean; msg: string } {
+        if (!this.beast) return { ok: false, msg: '没有随行异兽可喂食。' };
+        if (this.gold < cost) return { ok: false, msg: `金币不足,需要 ${cost} 金币。` };
+        this.addGold(-cost);
+        const amt = Math.floor(cost / 10);   // 每10金 = 1羁绊经验
+        const r = this.gainBeastBond(amt);
+        let msg = `${this.beast.name} 吃了一顿好食,羁绊经验 +${amt}。`;
+        if (r.newSkill) {
+            const s = SkillsData.get(r.newSkill);
+            msg += `羁绊提升!学会了「${s.name}」!`;
+        } else if (r.leveled) {
+            msg += `羁绊提升到 Lv.${this.beast.bond}!`;
+        }
+        this.save();
+        return { ok: true, msg };
+    }
+
+    /** 当前随行异兽数量(悬赏统计用) */
+    getBeastKillCount(targetId: string): number {
+        let n = 0;
+        this.flags.forEach(f => { if (f.startsWith(`kill_${targetId}`)) n++; });
+        return n;
+    }
+
+    /** 记录击杀(悬赏进度):用当前flag数做唯一后缀,避免同毫秒重复 */
+    recordKill(targetId: string): void {
+        this.addFlag(`kill_${targetId}_${this.flags.size}`);
+    }
+
     /** 图鉴收录 */
     addToDex(id: string): void {
         if (!this.dex.includes(id)) {

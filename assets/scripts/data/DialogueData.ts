@@ -329,8 +329,17 @@ export class DialogueData {
             ],
             choices: [
                 { text: '住一晚(20金,全队回满)', next: 'inn_sleep' },
+                { text: '喂食随行异兽(30金,羁绊+3)', next: 'inn_feed' },
                 { text: '先不了', next: '' },
             ],
+        },
+        inn_feed: {
+            id: 'inn_feed',
+            lines: [
+                { speaker: '旅店老板', text: '好嘞!客官随行的灵兽也喂些好吃的——' },
+            ],
+            actions: ['feedBeast:30'],
+            next: 'innkeeper_talk',
         },
         inn_sleep: {
             id: 'inn_sleep',
