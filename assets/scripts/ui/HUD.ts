@@ -24,7 +24,7 @@ export class HUD extends Component {
         this.mapLabel = UIFactory.label(this.node, '', 18, new Vec3(-430, 278), undefined, { bold: true, outline: true, anchorX: 0, anchorY: 1 });
         this.goldLabel = UIFactory.label(this.node, '', 16, new Vec3(430, 278), undefined, { bold: true, outline: true, anchorX: 1, anchorY: 1 });
         this.partyLabel = UIFactory.label(this.node, '', 15, new Vec3(-430, 252), undefined, { bold: true, outline: true, anchorX: 0, anchorY: 1 });
-        this.hintLabel = UIFactory.label(this.node, '方向键/WASD 移动　Z/空格 对话·确认　X 图鉴　红圈! = 强敌/Boss位置', 13, new Vec3(0, -282), undefined, { outline: true });
+        this.hintLabel = UIFactory.label(this.node, '方向键/WASD 移动　Z/空格 对话·确认　X 图鉴　C 属性加点　红圈! = 强敌/Boss位置', 13, new Vec3(0, -282), undefined, { outline: true });
     }
 
     update(): void {

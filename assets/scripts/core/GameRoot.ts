@@ -10,6 +10,7 @@ import { PlayerController } from '../map/PlayerController';
 import { HUD } from '../ui/HUD';
 import { DialogueUI } from '../ui/DialogueUI';
 import { CodexUI } from '../ui/CodexUI';
+import { AttrPanel } from '../ui/AttrPanel';
 import { BattleManager } from '../battle/BattleManager';
 import { MapsData } from '../data/MapsData';
 import { BeastsData } from '../data/BeastsData';
@@ -28,6 +29,7 @@ export class GameRoot extends Component {
     private mapView: MapView;
     private player: PlayerController;
     private codex: CodexUI;
+    private attrPanel: AttrPanel;
     private dialogue: DialogueUI;
     private lastDialogEnd = 0;  // 防止对话结束后同帧重新触发
     private battle: BattleManager;
@@ -200,6 +202,12 @@ export class GameRoot extends Component {
         uiRoot.addChild(codexNode);
         this.codex = codexNode.addComponent(CodexUI);
         this.codex.init(uiRoot);
+
+        const attrNode = new Node('AttrPanel');
+        attrNode.layer = Layers.Enum.UI_2D;
+        uiRoot.addChild(attrNode);
+        this.attrPanel = attrNode.addComponent(AttrPanel);
+        this.attrPanel.init(uiRoot);
     }
 
     // ==================== 事件与输入 ====================
@@ -332,6 +340,7 @@ export class GameRoot extends Component {
         if (this.gm.state === GameState.EXPLORE) {
             if (confirm && Date.now() - this.lastDialogEnd > 350) this.player.pressInteract();
             else if (code === KeyCode.KEY_X) this.codex.toggle();
+            else if (code === KeyCode.KEY_C) this.attrPanel.toggle();
         } else if (this.gm.state === GameState.MENU) {
             if (code === KeyCode.KEY_X || code === KeyCode.ESCAPE) this.codex.toggle();
         }

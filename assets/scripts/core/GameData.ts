@@ -61,6 +61,7 @@ export interface SaveData {
     dex: string[];              // 图鉴已收录异兽 id
     gold: number;
     weaponId: string;           // 当前武器
+    attrPoints: number;         // 可分配的属性点(升级获得)
     flags: string[];
     mapId: string;
     x: number;

@@ -32,6 +32,7 @@ export class GameManager {
     dex: string[] = [];                // 图鉴
     gold = 0;
     weaponId = 'wooden_sword';         // 当前武器(DQ式装备)
+    attrPoints = 0;                    // 未分配的属性点(每次升级+3)
     flags = new Set<string>();
     playTime = 0;
 
@@ -65,6 +66,7 @@ export class GameManager {
         this.dex = [];
         this.gold = 50;
         this.weaponId = 'wooden_sword';
+        this.attrPoints = 0;
         this.flags = new Set<string>();
         this.playTime = 0;
         this.curMapId = 'home';
@@ -81,6 +83,7 @@ export class GameManager {
             this.dex = data.dex;
             this.gold = data.gold;
             this.weaponId = data.weaponId || 'wooden_sword';
+            this.attrPoints = data.attrPoints || 0;
             this.flags = new Set(data.flags);
             this.playTime = data.playTime;
             this.curMapId = data.mapId;
@@ -118,6 +121,7 @@ export class GameManager {
             dex: this.dex,
             gold: this.gold,
             weaponId: this.weaponId,
+            attrPoints: this.attrPoints,
             flags: Array.from(this.flags),
             mapId: this.curMapId,
             x: this.spawnX,
@@ -241,7 +245,9 @@ export class GameManager {
             this.player.spd += 1;
             this.player.hp = this.player.maxHp;
             this.player.mp = this.player.maxMp;
-            console.log(`[升级] ${this.player.name} Lv.${this.player.level}!`);
+            // 升级自由属性点(供玩家分配:攻/防/速/生命)
+            this.attrPoints += 3;
+            console.log(`[升级] ${this.player.name} Lv.${this.player.level}! 获得 3 点自由属性点`);
         }
         // 伙伴同步升级(简单跟随)
         if (this.beast && this.beast.level < this.player.level) {
@@ -253,6 +259,22 @@ export class GameManager {
             this.beast.hp = Math.min(this.beast.maxHp, this.beast.hp + 5);
         }
         EventBus.emit(GEvent.PLAYER_HP_CHANGED);
+    }
+
+    /** 分配自由属性点:key=atk/def/spd/maxHp, 成功返回 true */
+    spendAttrPoint(key: string): boolean {
+        if (this.attrPoints <= 0) return false;
+        const p = this.player;
+        switch (key) {
+            case 'atk': p.atk += 2; break;
+            case 'def': p.def += 2; break;
+            case 'spd': p.spd += 1; break;
+            case 'maxHp': p.maxHp += 10; p.hp = Math.min(p.maxHp, p.hp + 10); break;
+            default: return false;
+        }
+        this.attrPoints--;
+        EventBus.emit(GEvent.PLAYER_HP_CHANGED);
+        return true;
     }
 
     /** 玩家是否习得某技能(主角技能随剧情解锁) */
