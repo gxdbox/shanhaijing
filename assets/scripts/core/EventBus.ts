@@ -52,4 +52,5 @@ export const GEvent = {
     GAME_OVER: 'game-over',
     BEAST_JOINED: 'beast-joined',        // (beastId)
     DEX_ADDED: 'dex-added',              // (beastId)
+    QUEST_CHANGED: 'quest-changed',      // (questId|null)
 };

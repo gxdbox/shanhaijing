@@ -137,5 +137,41 @@ const wd = require(path.join(T, 'data/WeaponsData.js'));
 ok('青铜剑元素=金', wd.WeaponsData.get('bronze_sword').element === '金');
 ok('碧水剑元素=水', wd.WeaponsData.get('water_sword').element === '水');
 
+
+// ===== 测试10：任务系统 =====
+const gm5 = new GameManager();
+gm5.newGame();
+ok('新档当前主线任务=q1', gm5.questId === 'q1_elder_errand');
+ok('getQuest 返回任务', gm5.getQuest()?.id === 'q1_elder_errand');
+// 初始任务未完成
+const gold_before = gm5.gold;
+ok('任务未完成时无奖励', gm5.checkQuestProgress() === null && gm5.gold === gold_before);
+// 达成 clearFlag → 自动完成发奖 + 接续主线
+gm5.addFlag('met_jiuwei');
+ok('完成任务发奖(金币+)', gm5.gold === gold_before + 30);
+ok('任务标记完成', gm5.questDone.includes('q1_elder_errand'));
+ok('主线接续到 q2', gm5.questId === 'q2_jiuwei');
+// 再推进 q2
+const g2 = gm5.gold;
+gm5.addFlag('jiuwei_joined');
+ok('q2完成接续q3', gm5.questId === 'q3_qiongqi' && gm5.gold === g2 + 60);
+// 任务链到结尾
+gm5.addFlag('qiongqi_down');
+gm5.addFlag('xingxing_joined');
+ok('q4完成接续q5天山', gm5.questId === 'q5_tianshan');
+gm5.addFlag('dijiang_down');
+ok('主线全部完成', gm5.questId === null);
+// 存档含任务字段
+gm5.save();
+const savedQ = JSON.parse(storage['shj_save_v1']);
+ok('存档含questDone', Array.isArray(savedQ.questDone) && savedQ.questDone.length >= 4);
+// 旧档无任务字段 → 兼容
+const legacyQ = { player: gm5.player, beast: null, dex: [], gold: 100, flags: [], mapId: 'home', x: 1, y: 1, playTime: 0 };
+storage['shj_save_v1'] = JSON.stringify(legacyQ);
+const gm6 = new GameManager();
+gm6.start();
+ok('旧档questId默认null', gm6.questId === null);
+ok('旧档questDone默认空', gm6.questDone.length === 0);
+
 console.log(`\n结果: ${pass} 通过, ${fail} 失败`);
 process.exit(fail > 0 ? 1 : 0);

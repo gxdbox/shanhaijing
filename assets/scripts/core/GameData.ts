@@ -67,6 +67,8 @@ export interface SaveData {
     gold: number;
     weaponId: string;           // 当前武器
     attrPoints: number;         // 可分配的属性点(升级获得)
+    questId?: string;           // 当前主线任务
+    questDone?: string[];       // 已完成任务id列表
     flags: string[];
     mapId: string;
     x: number;
@@ -82,6 +84,19 @@ export interface WeaponDef {
     atkBonus: number;   // 攻击加成
     price: number;      // 价格(金币)
     element?: string;   // 五金行属性
+}
+
+/** 任务定义 */
+export interface QuestDef {
+    id: string;
+    title: string;
+    desc: string;
+    type: 'main' | 'side' | 'bounty';
+    target: string;       // 当前目标描述(地图指引)
+    clearFlag: string;    // 完成条件:该flag存在即完成
+    rewardGold: number;
+    rewardExp: number;
+    next?: string;        // 完成后接续的主线任务id
 }
 
 /** NPC 配置 */

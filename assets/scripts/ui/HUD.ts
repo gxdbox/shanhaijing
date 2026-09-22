@@ -15,6 +15,7 @@ export class HUD extends Component {
     private goldLabel: Label;
     private hintLabel: Label;
     private weaponLabel: Label | null = null;
+    private questLabel: Label | null = null;
 
     init(uiRoot: Node): void {
         this.node.layer = uiRoot.layer;
@@ -45,6 +46,12 @@ export class HUD extends Component {
             lines.push(`${b.name}${bondStr}${bondExpStr}  HP ${Math.max(0, b.hp)}/${b.maxHp}  MP ${Math.max(0, b.mp)}/${b.maxMp}`);
         }
         this.partyLabel.string = lines.join('\n');
+        // 当前任务指引(HUD 顶部中央,给玩家方向感)
+        if (!this.questLabel) {
+            this.questLabel = UIFactory.label(this.node, '', 14, new Vec3(0, 268), new Color(255, 230, 150, 255), { outline: true });
+        }
+        const quest = gm.getQuest();
+        this.questLabel.string = quest ? `◆ 任务:${quest.title} —— ${quest.target}` : '◆ 主线已通,自由探索';
         // 武器显示(右上角,金币下方)——成长反馈:让玩家看到装备变化
         if (!this.weaponLabel) {
             this.weaponLabel = UIFactory.label(this.node, '', 14, new Vec3(430, 256), new Color(230, 210, 160, 255), { outline: true, anchorX: 1, anchorY: 1 });

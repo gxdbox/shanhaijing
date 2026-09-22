@@ -1,8 +1,9 @@
-import { ActorStats, BeastDef, SaveData, WeaponDef } from './GameData';
+import { ActorStats, BeastDef, QuestDef, SaveData, WeaponDef } from './GameData';
 import { BeastsData } from '../data/BeastsData';
 import { MapsData } from '../data/MapsData';
 import { SkillsData } from '../data/SkillsData';
 import { WeaponsData } from '../data/WeaponsData';
+import { QuestsData } from '../data/QuestsData';
 import { EventBus, GEvent } from './EventBus';
 import { SaveManager } from './SaveManager';
 
@@ -33,6 +34,8 @@ export class GameManager {
     gold = 0;
     weaponId = 'wooden_sword';         // 当前武器(DQ式装备)
     attrPoints = 0;                    // 未分配的属性点(每次升级+3)
+    questId: string | null = null;     // 当前主线任务
+    questDone: string[] = [];          // 已完成任务
     flags = new Set<string>();
     playTime = 0;
 
@@ -67,6 +70,8 @@ export class GameManager {
         this.gold = 50;
         this.weaponId = 'wooden_sword';
         this.attrPoints = 0;
+        this.questId = 'q1_elder_errand';
+        this.questDone = [];
         this.flags = new Set<string>();
         this.playTime = 0;
         this.curMapId = 'home';
@@ -84,6 +89,8 @@ export class GameManager {
             this.gold = data.gold;
             this.weaponId = data.weaponId || 'wooden_sword';
             this.attrPoints = data.attrPoints || 0;
+            this.questId = data.questId || null;
+            this.questDone = data.questDone || [];
             this.flags = new Set(data.flags);
             this.playTime = data.playTime;
             this.curMapId = data.mapId;
@@ -122,6 +129,8 @@ export class GameManager {
             gold: this.gold,
             weaponId: this.weaponId,
             attrPoints: this.attrPoints,
+            questId: this.questId ?? undefined,
+            questDone: this.questDone,
             flags: Array.from(this.flags),
             mapId: this.curMapId,
             x: this.spawnX,
@@ -175,6 +184,8 @@ export class GameManager {
     addFlag(flag: string): void {
         this.flags.add(flag);
         EventBus.emit(GEvent.FLAG_CHANGED, flag);
+        // 任务检测:若此 flag 正好达成当前任务,自动发奖并推进
+        this.checkQuestProgress();
     }
 
     removeFlag(flag: string): void {
@@ -243,6 +254,30 @@ export class GameManager {
         }
         EventBus.emit(GEvent.BEAST_JOINED, b.beastId!);   // 刷新HUD
         return { leveled, newSkill };
+    }
+
+    // ==================== 任务系统(M3) ====================
+
+    /** 当前任务(无则 null) */
+    getQuest(): QuestDef | null {
+        return this.questId ? QuestsData.get(this.questId) : null;
+    }
+
+    /** 检查并推进当前任务:若完成条件flag达成→发奖励→接续主线 */
+    checkQuestProgress(): QuestDef | null {
+        const q = this.getQuest();
+        if (!q) return null;
+        if (this.hasFlag(q.clearFlag)) {
+            // 完成:发奖励
+            this.addGold(q.rewardGold);
+            this.gainExp(q.rewardExp);
+            this.questDone.push(q.id);
+            // 主线接续
+            this.questId = q.next || null;
+            EventBus.emit(GEvent.QUEST_CHANGED, this.questId);
+            return q;
+        }
+        return null;
     }
 
     /** 图鉴收录 */
