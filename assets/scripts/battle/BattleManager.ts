@@ -118,7 +118,11 @@ export class BattleManager extends Component {
                 }
                 // 击败的异兽全部点亮图鉴(收集盼头:打赢即可收录)
                 for (const e of this.enemies) {
-                    if (e.beastId) gm.addToDex(e.beastId);
+                    if (e.beastId) {
+                        gm.addToDex(e.beastId);
+                        // 击杀统计(成就/悬赏)
+                        gm.recordKill(e.beastId);
+                    }
                 }
                 // 随行异兽获得羁绊经验(培养盼头:战斗→羁绊→解锁技能)
                 const bondAmt = 8 + this.enemies.length * 4;

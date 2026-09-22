@@ -290,5 +290,32 @@ ok('已进化不重复进化', gm12.tryEvolveBeast() === null);
 const bd14 = require(path.join(T, 'data/EvolutionsData.js'));
 ok('九尾狐可进化', bd14.EvolutionsData?.canEvolve('jiuwei') === true);
 
+
+// ===== 测试15：成就系统(二期) =====
+const gm15 = new GameManager();
+gm15.newGame();
+// 初始无成就
+ok('初始无成就', gm15.achDone.length === 0);
+// 收录5只异兽(触发图鉴成就)
+gm15.catchBeast('jiuwei');  // 九尾狐
+gm15.addToDex('zhi');
+gm15.addToDex('xuangui');
+gm15.addToDex('huanshu');
+gm15.addToDex('xingxing');
+// catchBeast 已加图鉴;前5只触发 ach_dex5
+ok('图鉴5只解锁成就', gm15.achDone.includes('ach_dex5'));
+// 金币成就:持有500金
+const goldBefore = gm15.gold;
+gm15.addGold(500);
+ok('金币成就解锁', gm15.achDone.includes('ach_gold500'));
+ok('成就金币奖励到账', gm15.gold >= 500 + goldBefore);
+// 通关成就
+gm15.addFlag('game_clear');
+ok('通关成就解锁', gm15.achDone.includes('ach_clear'));
+// 不再重复解锁
+const beforeLen = gm15.achDone.length;
+gm15.checkAchievements();
+ok('成就不重复解锁', gm15.achDone.length === beforeLen);
+
 console.log(`\n结果: ${pass} 通过, ${fail} 失败`);
 process.exit(fail > 0 ? 1 : 0);

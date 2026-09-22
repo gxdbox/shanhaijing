@@ -71,6 +71,8 @@ export interface SaveData {
     attrPoints: number;         // 可分配的属性点(升级获得)
     questId?: string;           // 当前主线任务
     questDone?: string[];       // 已完成任务id列表
+    achDone?: string[];         // 已解锁成就id列表
+    killCount?: number;         // 累计击败数
     flags: string[];
     mapId: string;
     x: number;
@@ -119,6 +121,16 @@ export interface QuestDef {
     rewardGold: number;
     rewardExp: number;
     next?: string;        // 完成后接续的主线任务id
+}
+
+/** 成就定义 */
+export interface AchievementDef {
+    id: string;
+    name: string;
+    desc: string;
+    type: 'dex' | 'kill' | 'boss' | 'gold' | 'evolve' | 'clear';
+    target: number;       // 达成目标值
+    rewardGold: number;   // 金币奖励
 }
 
 /** NPC 配置 */

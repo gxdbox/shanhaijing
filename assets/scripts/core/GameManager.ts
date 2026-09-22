@@ -1,10 +1,11 @@
-import { ActorStats, ArmorDef, BeastDef, ItemDef, QuestDef, SaveData, WeaponDef } from './GameData';
+import { ActorStats, AchievementDef, ArmorDef, BeastDef, ItemDef, QuestDef, SaveData, WeaponDef } from './GameData';
 import { BeastsData } from '../data/BeastsData';
 import { MapsData } from '../data/MapsData';
 import { SkillsData } from '../data/SkillsData';
 import { WeaponsData } from '../data/WeaponsData';
 import { ArmorsData } from '../data/ArmorsData';
 import { ItemsData } from '../data/ItemsData';
+import { AchievementsData } from '../data/AchievementsData';
 import { QuestsData } from '../data/QuestsData';
 import { EvolutionsData } from '../data/EvolutionsData';
 import { EventBus, GEvent } from './EventBus';
@@ -41,6 +42,8 @@ export class GameManager {
     attrPoints = 0;                    // 未分配的属性点(每次升级+3)
     questId: string | null = null;     // 当前主线任务
     questDone: string[] = [];          // 已完成任务
+    achDone: string[] = [];            // 已解锁成就
+    killCount = 0;                     // 累计击败异兽数(成就统计)
     flags = new Set<string>();
     playTime = 0;
 
@@ -79,6 +82,8 @@ export class GameManager {
         this.attrPoints = 0;
         this.questId = 'q1_elder_errand';
         this.questDone = [];
+        this.achDone = [];
+        this.killCount = 0;
         this.flags = new Set<string>();
         this.playTime = 0;
         this.curMapId = 'home';
@@ -100,6 +105,8 @@ export class GameManager {
             this.attrPoints = data.attrPoints || 0;
             this.questId = data.questId || null;
             this.questDone = data.questDone || [];
+            this.achDone = data.achDone || [];
+            this.killCount = data.killCount || 0;
             this.flags = new Set(data.flags);
             this.playTime = data.playTime;
             this.curMapId = data.mapId;
@@ -144,6 +151,8 @@ export class GameManager {
             attrPoints: this.attrPoints,
             questId: this.questId ?? undefined,
             questDone: this.questDone,
+            achDone: this.achDone,
+            killCount: this.killCount,
             flags: Array.from(this.flags),
             mapId: this.curMapId,
             x: this.spawnX,
@@ -156,6 +165,8 @@ export class GameManager {
     addGold(n: number): void {
         this.gold = Math.max(0, this.gold + n);
         EventBus.emit(GEvent.GOLD_CHANGED, this.gold);
+        // 成就检查:金币类(加钱时顺带检查)
+        if (n > 0) this.checkAchievements();
     }
 
     /** 购买武器:扣金币+装备(仅能买更高阶的) */
@@ -268,6 +279,8 @@ export class GameManager {
         EventBus.emit(GEvent.FLAG_CHANGED, flag);
         // 任务检测:若此 flag 正好达成当前任务,自动发奖并推进
         this.checkQuestProgress();
+        // 成就检测:通关/boss等flag类成就
+        this.checkAchievements();
     }
 
     removeFlag(flag: string): void {
@@ -421,6 +434,9 @@ export class GameManager {
     /** 记录击杀(悬赏进度):用当前flag数做唯一后缀,避免同毫秒重复 */
     recordKill(targetId: string): void {
         this.addFlag(`kill_${targetId}_${this.flags.size}`);
+        this.killCount++;
+        // 成就检查:击杀成就
+        this.checkAchievements();
     }
 
     /** 图鉴收录 */
@@ -428,7 +444,35 @@ export class GameManager {
         if (!this.dex.includes(id)) {
             this.dex.push(id);
             EventBus.emit(GEvent.DEX_ADDED, id);
+            // 成就检查:图鉴类
+            this.checkAchievements();
         }
+    }
+
+    // ==================== 成就系统(二期) ====================
+
+    /** 检查并解锁成就:达成条件→发金币奖励→记录 */
+    checkAchievements(): string[] {
+        const unlocked: string[] = [];
+        for (const a of AchievementsData.list) {
+            if (this.achDone.includes(a.id)) continue;
+            let done = false;
+            switch (a.type) {
+                case 'dex':   done = this.dex.length >= a.target; break;
+                case 'kill':  done = this.killCount >= a.target; break;
+                case 'boss':  done = this.hasFlag('sixiong_down'); break;
+                case 'gold':  done = this.gold >= a.target; break;
+                case 'evolve': done = !!this.beast && !!this.beast.beastId && this.beast.beastId.endsWith('_evo'); break;
+                case 'clear': done = this.hasFlag('game_clear'); break;
+            }
+            if (done) {
+                this.achDone.push(a.id);
+                this.addGold(a.rewardGold);
+                unlocked.push(a.id);
+                EventBus.emit('achievement:unlocked' as any, a.id);
+            }
+        }
+        return unlocked;
     }
 
     /** 全队治疗(回村/剧情) */
