@@ -116,6 +116,15 @@ export class BattleManager extends Component {
                 for (const e of this.enemies) {
                     if (e.beastId) gm.addToDex(e.beastId);
                 }
+                // 随行异兽获得羁绊经验(培养盼头:战斗→羁绊→解锁技能)
+                const bondAmt = 8 + this.enemies.length * 4;
+                const r = gm.gainBeastBond(bondAmt);
+                if (r.leveled) {
+                    if (r.newSkill) {
+                        const s = SkillsData.get(r.newSkill);
+                        this.setMsg(`羁绊提升!${gm.beast?.name} 学会了「${s.name}」!`);
+                    }
+                }
             }
             gm.save();
         } catch (e) {
@@ -689,6 +698,17 @@ export class BattleManager extends Component {
         return { actor, isEnemy: true, skill: null, targets, text: `${actor.name} 的攻击!` };
     }
 
+    /** 五行克制:金→木→土→水→火→金(克=1.5,被克=0.7,无关=1) */
+    private static elementFactor(attacker: ActorStats, target: ActorStats): number {
+        const a = attacker.element;
+        const t = target.element;
+        if (!a || !t) return 1;
+        const beats: Record<string, string> = { '金': '木', '木': '土', '土': '水', '水': '火', '火': '金' };
+        if (beats[a] === t) return 1.5;
+        if (beats[t] === a) return 0.7;
+        return 1;
+    }
+
     private async playAction(act: PendingAction): Promise<void> {
         this.setMsg(act.text);
         await sleep(500);
@@ -712,8 +732,10 @@ export class BattleManager extends Component {
                     amount = Math.floor(s.power * (0.9 + Math.random() * 0.2));
                     target.hp = Math.min(target.maxHp, target.hp + amount);
                 } else if (s.type === 'magic') {
-                    amount = Math.max(1, Math.floor(act.actor.atk * s.power * (0.85 + Math.random() * 0.3) - target.def * 0.4));
+                    const ef = BattleManager.elementFactor(act.actor, target);
+                    amount = Math.max(1, Math.floor(act.actor.atk * s.power * (0.85 + Math.random() * 0.3) * ef - target.def * 0.4));
                     target.hp = Math.max(0, target.hp - amount);
+                    if (ef > 1) { this.setMsg(`「${act.actor.name}」的五行之力克制了「${target.name}」!`); await sleep(350); }
                 } else if (s.type === 'buff') {
                     // 增益：提升目标防御（buffDef），持续本场战斗（简化：直接加防）
                     isHeal = true;
@@ -721,8 +743,10 @@ export class BattleManager extends Component {
                     target.def += amount;
                     target.maxHp = target.maxHp; // 无副作用
                 } else {
-                    amount = Math.max(1, Math.floor(act.actor.atk * s.power - target.def));
+                    const ef = BattleManager.elementFactor(act.actor, target);
+                    amount = Math.max(1, Math.floor(act.actor.atk * s.power * ef - target.def));
                     target.hp = Math.max(0, target.hp - amount);
+                    if (ef > 1) { this.setMsg(`「${act.actor.name}」的五行之力克制了「${target.name}」!`); await sleep(350); }
                 }
                 act.actor.mp = Math.max(0, act.actor.mp - s.mpCost);
             } else {

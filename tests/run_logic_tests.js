@@ -103,5 +103,39 @@ gm2.start();
 ok('旧档读档 attrPoints 默认 0', gm2.attrPoints === 0);
 ok('旧档读档 weaponId 默认木剑', gm2.weaponId === 'wooden_sword');
 
+
+// ===== 测试8：羁绊系统 =====
+const gm3 = new GameManager();
+gm3.newGame();
+gm3.catchBeast('jiuwei');   // 收服九尾狐(羁绊Lv1)
+ok('收服后羁绊Lv1', gm3.beast.bond === 1);
+ok('羁绊初始经验0', gm3.beast.bondExp === 0);
+// 刷经验到 Lv2 (需要20)，解锁 bondSkill
+const r3 = gm3.gainBeastBond(25);
+ok('羁绊升级到Lv2', gm3.beast.bond === 2);
+ok('羁绊升级flag', r3.leveled === true);
+ok('Lv2解锁专属技能(狐火连珠)', r3.newSkill === 'huhuo' && gm3.beast.skills.includes('huhuo'));
+// 继续升到更高(从Lv2到Lv5需 50+80+110=240 经验,给300)
+gm3.gainBeastBond(300);
+ok('羁绊可升到Lv5上限', gm3.beast.bond === 5);
+// 无伙伴时返回 false
+const gm4 = new GameManager();
+gm4.newGame();
+const r2 = gm4.gainBeastBond(10);
+ok('无伙伴时升级返回 leveled=false', r2.leveled === false);
+
+// ===== 测试9：五行克制 =====
+// 通过 BeastsData 验证元素赋值
+const bd = require(path.join(T, 'data/BeastsData.js'));
+const zhi = bd.BeastsData.get('zhi');
+const xuangui = bd.BeastsData.get('xuangui');
+ok('彘元素=金', zhi.element === '金');
+ok('旋龟元素=水', xuangui.element === '水');
+ok('文鳐鱼元素=水', bd.BeastsData.get('wenyao').element === '水');
+// 武器元素
+const wd = require(path.join(T, 'data/WeaponsData.js'));
+ok('青铜剑元素=金', wd.WeaponsData.get('bronze_sword').element === '金');
+ok('碧水剑元素=水', wd.WeaponsData.get('water_sword').element === '水');
+
 console.log(`\n结果: ${pass} 通过, ${fail} 失败`);
 process.exit(fail > 0 ? 1 : 0);

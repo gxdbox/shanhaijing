@@ -31,7 +31,9 @@ export interface BeastDef {
     exp: number;
     gold: number;
     tex: string;            // 立绘资源路径(战斗第一人称)
-    skills: string[];
+    skills: string[];       // 初始技能
+    bondSkill?: string;     // 羁绊Lv2解锁技能
+    element?: string;       // 五行属性: 金木水火土
     boss?: boolean;
     catchable?: boolean;    // 可收服
 }
@@ -50,6 +52,9 @@ export interface ActorStats {
     exp: number;
     nextExp: number;        // 升到下一级所需
     skills: string[];       // 技能 id 列表
+    bond?: number;          // 羁绊等级(1=刚收服,最高5)
+    bondExp?: number;       // 羁绊经验(战斗胜利积累)
+    element?: string;       // 五行属性(金木水火土,无则普攻无克制)
     tex?: string;           // 我方头像(伙伴消除用)
     beastId?: string;       // 若为异兽伙伴/敌方,对应的 BeastDef id
 }
@@ -76,6 +81,7 @@ export interface WeaponDef {
     desc: string;
     atkBonus: number;   // 攻击加成
     price: number;      // 价格(金币)
+    element?: string;   // 五金行属性
 }
 
 /** NPC 配置 */

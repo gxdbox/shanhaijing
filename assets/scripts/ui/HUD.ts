@@ -39,7 +39,10 @@ export class HUD extends Component {
         const lines: string[] = [];
         lines.push(`${gm.player.name} Lv.${gm.player.level}  HP ${Math.max(0, gm.player.hp)}/${gm.player.maxHp}  MP ${Math.max(0, gm.player.mp)}/${gm.player.maxMp}`);
         if (gm.beast) {
-            lines.push(`${gm.beast.name}  HP ${Math.max(0, gm.beast.hp)}/${gm.beast.maxHp}  MP ${Math.max(0, gm.beast.mp)}/${gm.beast.maxMp}`);
+            const b = gm.beast;
+            const bondStr = b.bond ? ` 羁绊Lv${b.bond}` : '';
+            const bondExpStr = b.bond ? `(${b.bondExp}/${gm.bondExpNeed(b.bond)})` : '';
+            lines.push(`${b.name}${bondStr}${bondExpStr}  HP ${Math.max(0, b.hp)}/${b.maxHp}  MP ${Math.max(0, b.mp)}/${b.maxMp}`);
         }
         this.partyLabel.string = lines.join('\n');
         // 武器显示(右上角,金币下方)——成长反馈:让玩家看到装备变化

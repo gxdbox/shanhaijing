@@ -15,6 +15,8 @@ export class BeastsData {
             maxHp: 18, maxMp: 0, atk: 9, def: 3, spd: 4,
             exp: 12, gold: 8,
             tex: 'beasts/zhi', skills: [],
+            bondSkill: 'huwei',
+            element: '金',
             catchable: true,
         },
         {
@@ -26,6 +28,8 @@ export class BeastsData {
             maxHp: 26, maxMp: 8, atk: 10, def: 7, spd: 3,
             exp: 22, gold: 16,
             tex: 'beasts/xuangui', skills: ['shuipao'],
+            bondSkill: 'guijia',
+            element: '水',
             catchable: true,
         },
         {
@@ -37,6 +41,8 @@ export class BeastsData {
             maxHp: 30, maxMp: 12, atk: 13, def: 5, spd: 8,
             exp: 34, gold: 24,
             tex: 'beasts/huanshu', skills: ['dujiao'],
+            bondSkill: 'pihuo',
+            element: '火',
             catchable: true,
         },
         {
@@ -48,6 +54,8 @@ export class BeastsData {
             maxHp: 40, maxMp: 24, atk: 15, def: 8, spd: 12,
             exp: 60, gold: 0,
             tex: 'beasts/jiuwei', skills: ['yanzhu'],
+            bondSkill: 'huhuo',
+            element: '火',
             catchable: true,
         },
         {
@@ -59,6 +67,8 @@ export class BeastsData {
             maxHp: 55, maxMp: 30, atk: 18, def: 9, spd: 14,
             exp: 95, gold: 60,
             tex: 'beasts/yinglong', skills: ['fengxi'],
+            bondSkill: 'longwei',
+            element: '木',
             catchable: true,
         },
         {
@@ -70,6 +80,8 @@ export class BeastsData {
             maxHp: 90, maxMp: 20, atk: 20, def: 10, spd: 9,
             exp: 160, gold: 150,
             tex: 'beasts/qiongqi', skills: ['tunri'],
+            bondSkill: 'chiyi',
+            element: '金',
             boss: true,
         },
         // ===== 第2期 南山经・西山经（日报开发）=====
@@ -82,6 +94,8 @@ export class BeastsData {
             maxHp: 22, maxMp: 6, atk: 10, def: 4, spd: 10,
             exp: 15, gold: 10,
             tex: 'beasts/xingxing', skills: ['panyue'],
+            bondSkill: 'shanbu',
+            element: '木',
             catchable: true,
         },
         {
@@ -93,6 +107,8 @@ export class BeastsData {
             maxHp: 34, maxMp: 18, atk: 11, def: 7, spd: 9,
             exp: 40, gold: 28,
             tex: 'beasts/lushu', skills: ['fuzhe', 'yaoge'],
+            bondSkill: 'huwen',
+            element: '土',
             catchable: true,
         },
         {
@@ -104,6 +120,8 @@ export class BeastsData {
             maxHp: 52, maxMp: 10, atk: 17, def: 9, spd: 8,
             exp: 70, gold: 45,
             tex: 'beasts/zheng', skills: ['jishi', 'wuweisao'],
+            bondSkill: 'wuweibian',
+            element: '火',
             catchable: true,
         },
         {
@@ -115,6 +133,8 @@ export class BeastsData {
             maxHp: 45, maxMp: 26, atk: 16, def: 6, spd: 13,
             exp: 80, gold: 55,
             tex: 'beasts/bifang', skills: ['ehua'],
+            bondSkill: 'danzu',
+            element: '火',
             catchable: true,
         },
         {
@@ -126,6 +146,8 @@ export class BeastsData {
             maxHp: 130, maxMp: 40, atk: 24, def: 12, spd: 10,
             exp: 400, gold: 300,
             tex: 'beasts/dijiang', skills: ['hundunwu'],
+            bondSkill: 'liuzu',
+            element: '土',
             boss: true,
         },
         // ===== 第3期 青丘・南岭・西荒（日报开发）=====
@@ -138,6 +160,8 @@ export class BeastsData {
             maxHp: 24, maxMp: 14, atk: 10, def: 5, spd: 9,
             exp: 30, gold: 12,
             tex: 'beasts/guanguan', skills: ['qingxin'],
+            bondSkill: 'heming',
+            element: '木',
             catchable: true,
         },
         {
@@ -149,6 +173,8 @@ export class BeastsData {
             maxHp: 62, maxMp: 20, atk: 19, def: 8, spd: 11,
             exp: 110, gold: 70,
             tex: 'beasts/gudiao', skills: ['yingti'],
+            bondSkill: 'zeji',
+            element: '水',
             catchable: true,
         },
         {
@@ -160,6 +186,8 @@ export class BeastsData {
             maxHp: 68, maxMp: 18, atk: 16, def: 13, spd: 7,
             exp: 120, gold: 80,
             tex: 'beasts/bo', skills: ['yubing'],
+            bondSkill: 'guyin',
+            element: '金',
             catchable: true,
         },
         // ===== 第4-7期 日报落地（9/18-9/21）=====
@@ -172,6 +200,8 @@ export class BeastsData {
             maxHp: 40, maxMp: 34, atk: 13, def: 6, spd: 17,
             exp: 55, gold: 30,
             tex: 'beasts/wenyao', skills: ['fengrang'],
+            bondSkill: 'yefei',
+            element: '水',
             catchable: true,
         },
         {
@@ -183,6 +213,8 @@ export class BeastsData {
             maxHp: 30, maxMp: 16, atk: 10, def: 6, spd: 13,
             exp: 35, gold: 18,
             tex: 'beasts/huan', skills: ['baisheng'],
+            bondSkill: 'sanwei',
+            element: '木',
             catchable: true,
         },
         {
@@ -194,6 +226,8 @@ export class BeastsData {
             maxHp: 58, maxMp: 22, atk: 16, def: 8, spd: 13,
             exp: 85, gold: 50,
             tex: 'beasts/shuhu', skills: ['juren'],
+            bondSkill: 'yichi',
+            element: '金',
             catchable: true,
         },
         {
@@ -205,6 +239,8 @@ export class BeastsData {
             maxHp: 40, maxMp: 12, atk: 14, def: 6, spd: 14,
             exp: 42, gold: 22,
             tex: 'beasts/mengji', skills: ['shanfu'],
+            bondSkill: 'baijiao',
+            element: '金',
             catchable: true,
         },
         {
@@ -216,6 +252,8 @@ export class BeastsData {
             maxHp: 48, maxMp: 20, atk: 11, def: 12, spd: 8,
             exp: 65, gold: 40,
             tex: 'beasts/tiangou', skills: ['yuxiong'],
+            bondSkill: 'langlang',
+            element: '金',
             catchable: true,
         },
         {
@@ -227,6 +265,8 @@ export class BeastsData {
             maxHp: 36, maxMp: 16, atk: 13, def: 5, spd: 10,
             exp: 38, gold: 20,
             tex: 'beasts/heluoyu', skills: ['shishen'],
+            bondSkill: 'quanbi',
+            element: '水',
             catchable: true,
         },
         {
@@ -238,6 +278,8 @@ export class BeastsData {
             maxHp: 28, maxMp: 14, atk: 11, def: 5, spd: 16,
             exp: 50, gold: 28,
             tex: 'beasts/ershu', skills: ['yubaidu'],
+            bondSkill: 'weiyi',
+            element: '木',
             catchable: true,
         },
         {
@@ -249,6 +291,8 @@ export class BeastsData {
             maxHp: 58, maxMp: 18, atk: 17, def: 10, spd: 7,
             exp: 95, gold: 60,
             tex: 'beasts/zhuhuai', skills: ['mingyan'],
+            bondSkill: 'sijiao',
+            element: '土',
             catchable: true,
         },
         {
@@ -260,6 +304,8 @@ export class BeastsData {
             maxHp: 85, maxMp: 20, atk: 20, def: 9, spd: 6,
             exp: 200, gold: 150,
             tex: 'beasts/paoxiao', skills: ['taotie'],
+            bondSkill: 'huchi',
+            element: '土',
             boss: true,
         },
     ];
@@ -287,6 +333,7 @@ export class BeastsData {
             exp: 0,
             nextExp: expForLevel(2),
             skills: def.skills,
+            element: def.element,
             tex: def.tex,
             beastId: def.id,
         };

@@ -192,6 +192,7 @@ export class GameManager {
         list.push({
             ...this.player,
             atk: this.player.atk + this.getWeaponBonus(),
+            element: this.player.element || this.getWeapon().element || '金',
         });
         if (this.beast) list.push(this.beast);
         return list;
@@ -202,6 +203,9 @@ export class GameManager {
         if (!this.beast) {
             const def = BeastsData.get(id);
             this.beast = BeastsData.toActor(def);
+            // 羁绊初始化:1级+0经验
+            this.beast.bond = 1;
+            this.beast.bondExp = 0;
             EventBus.emit(GEvent.BEAST_JOINED, id);
             this.addToDex(id);
             return true;
@@ -210,6 +214,35 @@ export class GameManager {
         this.addToDex(id);
         this.player.exp += 30;
         return false;
+    }
+
+    /** 羁绊经验需求:等级 → 下一级所需经验 */
+    bondExpNeed(level: number): number {
+        return 20 + (level - 1) * 30;   // 20/50/80/110
+    }
+
+    /** 随行异兽获得羁绊经验(战斗胜利调用);升级时若达到Lv2解锁专属技能 */
+    gainBeastBond(amount: number): { leveled: boolean; newSkill?: string } {
+        const b = this.beast;
+        if (!b) return { leveled: false };
+        b.bondExp = (b.bondExp || 0) + amount;
+        let leveled = false;
+        let newSkill: string | undefined;
+        while (b.bond && b.bond < 5 && b.bondExp >= this.bondExpNeed(b.bond)) {
+            b.bondExp -= this.bondExpNeed(b.bond);
+            b.bond++;
+            leveled = true;
+            // Lv2 解锁羁绊专属技能
+            if (b.bond === 2) {
+                const def = BeastsData.get(b.beastId!);
+                if (def.bondSkill && !b.skills.includes(def.bondSkill)) {
+                    b.skills.push(def.bondSkill);
+                    newSkill = def.bondSkill;
+                }
+            }
+        }
+        EventBus.emit(GEvent.BEAST_JOINED, b.beastId!);   // 刷新HUD
+        return { leveled, newSkill };
     }
 
     /** 图鉴收录 */
