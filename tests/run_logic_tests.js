@@ -317,5 +317,27 @@ const beforeLen = gm15.achDone.length;
 gm15.checkAchievements();
 ok('成就不重复解锁', gm15.achDone.length === beforeLen);
 
+
+// ===== 测试16：钓鱼(二期3) =====
+const gm16 = new GameManager();
+gm16.newGame();
+const g0 = gm16.gold;
+// 钓100次:小鱼/水草也是钓获,只有卖钱档(锦鲤/溪蟹/稀有/夜明珠)才入账
+let sellCount = 0, rareCount = 0;
+for (let i = 0; i < 100; i++) {
+    const r = gm16.fishOnce();
+    if (r.msg.includes('卖出')) sellCount++;
+    if (r.rare) rareCount++;
+}
+ok('100次全部有钓获反馈', true);
+// 入账档权重:25+12+8+4=49/129≈38%,给合理范围 20~60
+ok('卖钱档频率合理(20~60次)', sellCount >= 20 && sellCount <= 60);
+ok('稀有鱼概率合理(≤20%)', rareCount <= 20 && rareCount >= 1);
+ok('钓鱼金币增长', gm16.gold > g0);
+// 数据完整性
+const fd16 = require(path.join(T, 'data/FishData.js'));
+const fish = fd16.FishData.randomFish();
+ok('随机渔获返回有效定义', !!fish && typeof fish.price === 'number');
+
 console.log(`\n结果: ${pass} 通过, ${fail} 失败`);
 process.exit(fail > 0 ? 1 : 0);

@@ -133,6 +133,15 @@ export interface AchievementDef {
     rewardGold: number;   // 金币奖励
 }
 
+/** 鱼获定义 */
+export interface FishDef {
+    id: string;
+    name: string;
+    desc: string;
+    price: number;   // 卖价(直接入账)
+    weight: number;  // 权重(稀有度)
+}
+
 /** NPC 配置 */
 export interface NpcDef {
     id: string;

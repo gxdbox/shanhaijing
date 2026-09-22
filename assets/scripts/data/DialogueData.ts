@@ -429,6 +429,35 @@ export class DialogueData {
         al_craft3: { id: 'al_craft3', lines: [{ speaker: '炼金术士', text: '续命丹,危急关头救命!' }], actions: ['craftItem:rc_revive'], next: 'alchemist_talk' },
         al_potion1: { id: 'al_potion1', lines: [{ speaker: '炼金术士', text: '来,服下这颗回春丹。' }], actions: ['usePotion:herb_pill'], next: 'alchemist_talk' },
         al_potion2: { id: 'al_potion2', lines: [{ speaker: '炼金术士', text: '来,服下这颗回灵丹。' }], actions: ['usePotion:spirit_pill'], next: 'alchemist_talk' },
+
+        // ============ 钓鱼翁（二期3·休闲副玩法）============
+        fisherman_talk: {
+            id: 'fisherman_talk',
+            lines: [
+                { speaker: '渔翁', text: '青丘水泽,鱼儿肥美。客官要试试手气?(小鱼/锦鲤/溪蟹/文鳐幼鱼…甚至有夜明珠!)' },
+            ],
+            choices: [
+                { text: '抛一竿试试', next: 'fish_cast' },
+                { text: '再抛一竿', next: 'fish_cast2' },
+                { text: '不钓了', next: '' },
+            ],
+        },
+        fish_cast: {
+            id: 'fish_cast',
+            lines: [
+                { speaker: '渔翁', text: '好嘞,看你的!' },
+            ],
+            actions: ['fish'],
+            next: 'fisherman_talk',
+        },
+        fish_cast2: {
+            id: 'fish_cast2',
+            lines: [
+                { speaker: '渔翁', text: '再来!水底下还有好东西呢。' },
+            ],
+            actions: ['fish'],
+            next: 'fisherman_talk',
+        },
     };
 
     /**
@@ -473,6 +502,9 @@ export class DialogueData {
         ],
         alchemist: [
             { node: 'alchemist_talk' },
+        ],
+        fisherman: [
+            { node: 'fisherman_talk' },
         ],
         innkeeper: [
             { node: 'innkeeper_talk' },

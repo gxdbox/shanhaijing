@@ -256,6 +256,13 @@ export class DialogueUI extends Component {
                 this._flashMsg(rC.msg, () => this.runActions(actions, i + 1));
                 break;
             }
+            case 'fish': {
+                // 钓鱼:随机渔获卖钱
+                const rF = gm.fishOnce();
+                if (rF.ok) gm.save();
+                this._flashMsg(rF.msg, () => this.runActions(actions, i + 1));
+                break;
+            }
             case 'restInn': {
                 // 旅店:arg = 价格,付钱回满血蓝
                 const cost = parseInt(arg, 10) || 20;

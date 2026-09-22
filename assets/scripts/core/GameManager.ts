@@ -6,6 +6,7 @@ import { WeaponsData } from '../data/WeaponsData';
 import { ArmorsData } from '../data/ArmorsData';
 import { ItemsData } from '../data/ItemsData';
 import { AchievementsData } from '../data/AchievementsData';
+import { FishData } from '../data/FishData';
 import { QuestsData } from '../data/QuestsData';
 import { EvolutionsData } from '../data/EvolutionsData';
 import { EventBus, GEvent } from './EventBus';
@@ -257,6 +258,21 @@ export class GameManager {
         const out = ItemsData.get(rc.out);
         this.items.push(rc.out);
         return { ok: true, msg: `炼制成功!获得「${out?.name ?? rc.out}」` };
+    }
+
+    /** 钓鱼:随机渔获,直接卖钱入账(稀有鱼=惊喜盼头),或得素材 */
+    fishOnce(): { ok: boolean; msg: string; rare: boolean } {
+        const f = FishData.randomFish();
+        if (f.id === 'fish_trash' || f.id === 'fish_small') {
+            return { ok: true, msg: `钓上来一${f.id === 'fish_trash' ? '团' : '尾'}「${f.name}」…${f.desc}`, rare: false };
+        }
+        this.addGold(f.price);
+        const rare = f.price >= 100;
+        return {
+            ok: true,
+            rare,
+            msg: `钓到「${f.name}」!${f.desc} 卖出 +${f.price} 金币${rare ? ' ★稀有!' : ''}`,
+        };
     }
 
     /** 旅店休息:扣金币+全队回满 */

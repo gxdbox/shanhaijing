@@ -102,6 +102,7 @@ export class MapsData {
         npcs: [
             { id: 'jiuwei_npc', name: '九尾狐', x: 16, y: 10, dir: 'down', dialogue: 'jiuwei_npc', tex: 'beasts/jiuwei' },
             { id: 'guanguan', name: '灌灌', x: 4, y: 8, dir: 'down', dialogue: 'guanguan', tex: 'beasts/guanguan' },
+            { id: 'fisherman', name: '渔翁', x: 21, y: 6, dir: 'down', dialogue: 'fisherman' },
         ],
         portals: [
             { x: 13, y: 17, mapId: 'qingqiu', tx: 10, ty: 2, dir: 'down' },

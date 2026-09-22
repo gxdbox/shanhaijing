@@ -16,6 +16,7 @@ node "$TSC" --ignoreConfig --outDir /tmp/shj_test --module commonjs --target es2
   assets/scripts/data/QuestsData.ts \
   assets/scripts/data/EvolutionsData.ts \
   assets/scripts/data/AchievementsData.ts \
+  assets/scripts/data/FishData.ts \
   assets/scripts/core/SaveManager.ts \
   assets/scripts/core/GameManager.ts 2>/dev/null
 node tests/run_logic_tests.js
