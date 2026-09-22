@@ -308,6 +308,18 @@ export class BeastsData {
             element: '土',
             boss: true,
         },
+        {
+            id: 'sixiong',
+            name: '四凶合体',
+            kind: '神',
+            quote: '穷奇·饕餮·梼杌·混沌,四凶聚合为一,化生吞世之影。',
+            desc: '四凶戾气凝成的终极魔影,汲取山海怨念而生,是世界的终焉之敌。',
+            maxHp: 220, maxMp: 40, atk: 26, def: 14, spd: 10,
+            exp: 800, gold: 500,
+            tex: 'beasts/sixiong', skills: ['hundun_tunshi'],
+            element: '土',
+            boss: true,
+        },
     ];
 
     private static map = new Map<string, BeastDef>(

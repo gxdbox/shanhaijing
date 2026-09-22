@@ -242,5 +242,30 @@ gm10.start();
 ok('旧档防具默认粗布衣', gm10.armorId === 'cloth_armor');
 ok('旧档背包默认空', gm10.items.length === 0);
 
+
+// ===== 测试13：四凶合体终极Boss(M6) =====
+const gm11 = new GameManager();
+gm11.newGame();
+// 未满足前置:三凶未杀,四凶不能算通关
+gm11.addFlag('qiongqi_down');
+gm11.addFlag('dijiang_down');
+ok('两凶已杀仍非通关', !gm11.hasFlag('game_clear'));
+// 补杀狍鸮 → 满足四凶前置(战斗胜利才会写game_clear,这里模拟addFlag)
+gm11.addFlag('paoxiao_down');
+ok('三凶齐备', gm11.hasFlag('qiongqi_down') && gm11.hasFlag('dijiang_down') && gm11.hasFlag('paoxiao_down'));
+// 数据完整性
+const bd11 = require(path.join(T, 'data/BeastsData.js'));
+const six = bd11.BeastsData.get('sixiong');
+ok('四凶合体存在且为Boss', !!six && six.boss === true);
+ok('四凶合体土属性', six.element === '土');
+ok('四凶合体有吞世之影技能', six.skills.includes('hundun_tunshi'));
+const sd11 = require(path.join(T, 'data/SkillsData.js'));
+const tunshi = sd11.SkillsData.get('hundun_tunshi');
+ok('吞世之影群攻2.2倍', tunshi.type === 'magic' && tunshi.power === 2.2 && tunshi.target === 'allEnemies');
+// 模拟通关:写 game_clear(战斗胜利由 BattleManager winFlag 数组写入)
+gm11.addFlag('sixiong_down');
+gm11.addFlag('game_clear');
+ok('通关标记生效', gm11.hasFlag('game_clear'));
+
 console.log(`\n结果: ${pass} 通过, ${fail} 失败`);
 process.exit(fail > 0 ? 1 : 0);

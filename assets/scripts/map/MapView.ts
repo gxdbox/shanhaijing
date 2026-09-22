@@ -344,7 +344,10 @@ export class MapView extends Component {
             const encKey = `enc!${map.id}_${enc.x}_${enc.y}`;
             const conquered = gm && gm.hasFlag(encKey);
             // 剧情前置条件未满足:不显示标记(与 PlayerController 触发逻辑一致,避免"踩上去没战斗"的误导)
-            if (enc.flagKey && gm && !gm.hasFlag(enc.flagKey)) continue;
+            if (enc.flagKey) {
+                const keys = Array.isArray(enc.flagKey) ? enc.flagKey : [enc.flagKey];
+                if (gm && !keys.every(k => gm.hasFlag(k))) continue;
+            }
 
             const node = new Node(`boss_${enc.x}_${enc.y}`);
             node.layer = this.node.layer;

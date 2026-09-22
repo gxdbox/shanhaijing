@@ -107,7 +107,10 @@ export class BattleManager extends Component {
         gm.setState(GameState.EXPLORE);
         try {
             if (win) {
-                if (this.encounter?.winFlag) gm.addFlag(this.encounter.winFlag);
+                if (this.encounter?.winFlag) {
+                    const wf = Array.isArray(this.encounter.winFlag) ? this.encounter.winFlag : [this.encounter.winFlag];
+                    for (const f of wf) gm.addFlag(f);
+                }
                 // 固定遇敌:胜利后才写入"已触发"标记 → 战败可重战,BOSS 不会消失
                 if (this.encounter?.once) {
                     const mapId = gm.curMapId;

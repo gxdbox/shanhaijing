@@ -121,7 +121,9 @@ export class GameManager {
             for (const enc of map.encounters) {
                 if (!enc.once || !enc.winFlag) continue;
                 const encKey = `enc!${map.id}_${enc.x}_${enc.y}`;
-                if (this.flags.has(encKey) && !this.flags.has(enc.winFlag)) {
+                const winFlags = Array.isArray(enc.winFlag) ? enc.winFlag : [enc.winFlag];
+                // 已触发但胜利flag不全 → 重放该遭遇(兼容旧bug:战败也写了enc标记)
+                if (this.flags.has(encKey) && !winFlags.every(f => this.flags.has(f))) {
                     this.flags.delete(encKey);
                     console.log(`[GameManager] 兼容修复:重放固定遇敌 ${map.id}(${enc.x},${enc.y})`);
                 }

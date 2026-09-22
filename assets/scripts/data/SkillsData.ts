@@ -191,13 +191,6 @@ export class SkillsData {
             learnBeast: 'zhuhuai',
         },
         {
-            id: 'taotie',
-            name: '饕餮噬',
-            desc: '狍鸮张开虎齿血口撕咬敌人,贪婪吞噬其血肉。',
-            type: 'magic', power: 2.0, mpCost: 10, target: 'enemy',
-            learnBeast: 'paoxiao',
-        },
-        {
             id: 'huwei',
             name: '虎威',
             desc: '彘怒吼震慑,攻击并威慑一个敌人。',
@@ -357,6 +350,20 @@ export class SkillsData {
             desc: '狍鸮虎齿森然,撕咬一个敌人。',
             type: 'atk', power: 1.9, mpCost: 8, target: 'enemy',
             learnBeast: 'paoxiao',
+        },
+        {
+            id: 'taotie',
+            name: '饕餮噬',
+            desc: '狍鸮张开虎齿血口撕咬敌人,贪婪吞噬其血肉。',
+            type: 'magic', power: 2.0, mpCost: 10, target: 'enemy',
+            learnBeast: 'paoxiao',
+        },
+        {
+            id: 'hundun_tunshi',
+            name: '吞世之影',
+            desc: '四凶合体化为吞天巨影,席卷全场!',
+            type: 'magic', power: 2.2, mpCost: 20, target: 'allEnemies',
+            learnBeast: 'sixiong',
         },
     ];
 

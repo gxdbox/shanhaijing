@@ -2,7 +2,7 @@
   "ver": "0.0.1",
   "importer": "*",
   "imported": true,
-  "uuid": "691f6a69-4697-47f3-a418-9a5b741859e7",
+  "uuid": "049b455b-9272-46ef-8517-cc903d4c7e79",
   "files": [
     ".png"
   ],
@@ -11,6 +11,6 @@
     "type": "sprite-frame",
     "fixAlphaTransparencyArtifacts": false,
     "hasAlpha": true,
-    "redirect": "691f6a69-4697-47f3-a418-9a5b741859e7@6c48a"
+    "redirect": "049b455b-9272-46ef-8517-cc903d4c7e79@6c48a"
   }
 }

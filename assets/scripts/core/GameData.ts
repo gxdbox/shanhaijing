@@ -150,8 +150,8 @@ export interface FixedEncounterDef {
     beastIds: string[];
     bgTex?: string;
     once?: boolean;         // 只触发一次
-    flagKey?: string;       // 需要已具备的剧情标记
-    winFlag?: string;       // 战胜后写入的剧情标记
+    flagKey?: string | string[];  // 需要已具备的剧情标记(数组=全部满足)
+    winFlag?: string | string[];  // 战胜后写入的剧情标记(数组=全部写入)
 }
 
 /** 地图定义 */
