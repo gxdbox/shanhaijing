@@ -365,6 +365,42 @@ export class SkillsData {
             type: 'magic', power: 2.2, mpCost: 20, target: 'allEnemies',
             learnBeast: 'sixiong',
         },
+        // ===== 二期：进化专属技(五行) =====
+        {
+            id: 'jinling_po',
+            name: '金灵破',
+            desc: '灵兽凝金气于一点,破甲重击。',
+            type: 'atk', power: 2.0, mpCost: 8, target: 'enemy',
+            learnBeast: 'evo_gold',
+        },
+        {
+            id: 'muling_yu',
+            name: '木灵愈',
+            desc: '灵兽引木气回春,全队回复。',
+            type: 'heal', power: 30, mpCost: 10, target: 'ally',
+            learnBeast: 'evo_wood',
+        },
+        {
+            id: 'shuiling_xiao',
+            name: '水灵啸',
+            desc: '灵兽长啸引水涛,席卷群敌。',
+            type: 'magic', power: 1.8, mpCost: 12, target: 'allEnemies',
+            learnBeast: 'evo_water',
+        },
+        {
+            id: 'huoling_fen',
+            name: '火灵焚',
+            desc: '灵兽吐火焚天,重创一敌。',
+            type: 'magic', power: 2.2, mpCost: 10, target: 'enemy',
+            learnBeast: 'evo_fire',
+        },
+        {
+            id: 'tuling_zhen',
+            name: '土灵镇',
+            desc: '灵兽踏地震荡,威压全场。',
+            type: 'magic', power: 1.6, mpCost: 12, target: 'allEnemies',
+            learnBeast: 'evo_earth',
+        },
     ];
 
     private static map = new Map<string, SkillDef>(

@@ -6,6 +6,7 @@ import { WeaponsData } from '../data/WeaponsData';
 import { ArmorsData } from '../data/ArmorsData';
 import { ItemsData } from '../data/ItemsData';
 import { QuestsData } from '../data/QuestsData';
+import { EvolutionsData } from '../data/EvolutionsData';
 import { EventBus, GEvent } from './EventBus';
 import { SaveManager } from './SaveManager';
 
@@ -334,8 +335,38 @@ export class GameManager {
                 }
             }
         }
+        // 进化检查:羁绊Lv4且等级≥10且未进化
+        const evo = this.tryEvolveBeast();
+        if (evo) { newSkill = evo; }
         EventBus.emit(GEvent.BEAST_JOINED, b.beastId!);   // 刷新HUD
         return { leveled, newSkill };
+    }
+
+    /** 进化检查:满足条件(羁绊Lv4+等级≥10+未进化)自动进化,返回进化技能id */
+    tryEvolveBeast(): string | null {
+        const b = this.beast;
+        if (!b || !b.beastId) return null;
+        if (b.beastId.endsWith('_evo')) return null;          // 已进化
+        if ((b.bond || 0) < 4) return null;                    // 羁绊不够
+        if (b.level < 10) return null;                         // 等级不够
+        const base = BeastsData.get(b.beastId);
+        if (!EvolutionsData.canEvolve(b.beastId)) return null; // 无进化形态
+        // 执行进化
+        const evoDef = EvolutionsData.evoDef(base);
+        b.name = evoDef.name;
+        b.maxHp = evoDef.maxHp;
+        b.maxMp = evoDef.maxMp;
+        b.atk = evoDef.atk;
+        b.def = evoDef.def;
+        b.spd = evoDef.spd;
+        b.beastId = evoDef.id;
+        b.hp = b.maxHp;
+        b.mp = b.maxMp;
+        // 学会进化技
+        const newSkill = evoDef.skills[evoDef.skills.length - 1];
+        if (!b.skills.includes(newSkill)) b.skills.push(newSkill);
+        EventBus.emit(GEvent.BEAST_JOINED, evoDef.id);
+        return newSkill;
     }
 
     // ==================== 任务系统(M3) ====================

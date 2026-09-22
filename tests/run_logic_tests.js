@@ -267,5 +267,28 @@ gm11.addFlag('sixiong_down');
 gm11.addFlag('game_clear');
 ok('通关标记生效', gm11.hasFlag('game_clear'));
 
+
+// ===== 测试14：异兽进化(二期) =====
+const gm12 = new GameManager();
+gm12.newGame();
+gm12.catchBeast('jiuwei');
+// 条件不足不进化
+ok('羁绊不足不进化', gm12.tryEvolveBeast() === null);
+// 提升等级到10(直接设置)
+gm12.beast.level = 10;
+// 羁绊还不足
+ok('等级够但羁绊不足不进化', gm12.tryEvolveBeast() === null);
+// 刷羁绊到4(20+50+80=150经验到Lv4),gainBeastBond 内部会自动进化
+const evoR = gm12.gainBeastBond(160);
+ok('进化成功(返回技能)', typeof evoR.newSkill === 'string');
+ok('名字变为灵形态', gm12.beast.name === '九尾灵狐');
+ok('属性+40%', gm12.beast.atk >= Math.floor(14 * 1.4) && gm12.beast.beastId === 'jiuwei_evo');
+ok('学会进化技', evoR.newSkill ? gm12.beast.skills.includes(evoR.newSkill) : false);
+// 已进化不再进化
+ok('已进化不重复进化', gm12.tryEvolveBeast() === null);
+// 进化形态数据
+const bd14 = require(path.join(T, 'data/EvolutionsData.js'));
+ok('九尾狐可进化', bd14.EvolutionsData?.canEvolve('jiuwei') === true);
+
 console.log(`\n结果: ${pass} 通过, ${fail} 失败`);
 process.exit(fail > 0 ? 1 : 0);
