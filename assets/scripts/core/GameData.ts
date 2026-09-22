@@ -66,6 +66,8 @@ export interface SaveData {
     dex: string[];              // 图鉴已收录异兽 id
     gold: number;
     weaponId: string;           // 当前武器
+    armorId: string;            // 当前防具
+    items: string[];            // 背包(物品id列表)
     attrPoints: number;         // 可分配的属性点(升级获得)
     questId?: string;           // 当前主线任务
     questDone?: string[];       // 已完成任务id列表
@@ -84,6 +86,26 @@ export interface WeaponDef {
     atkBonus: number;   // 攻击加成
     price: number;      // 价格(金币)
     element?: string;   // 五金行属性
+}
+
+/** 防具定义 */
+export interface ArmorDef {
+    id: string;
+    name: string;
+    desc: string;
+    defBonus: number;   // 防御加成
+    price: number;
+}
+
+/** 物品/素材定义 */
+export interface ItemDef {
+    id: string;
+    name: string;
+    desc: string;
+    type: 'material' | 'potion';
+    price?: number;       // 素材出售价
+    healHp?: number;      // 丹药:回复HP
+    healMp?: number;      // 丹药:回复MP
 }
 
 /** 任务定义 */

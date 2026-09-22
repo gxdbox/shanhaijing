@@ -1,8 +1,10 @@
-import { ActorStats, BeastDef, QuestDef, SaveData, WeaponDef } from './GameData';
+import { ActorStats, ArmorDef, BeastDef, ItemDef, QuestDef, SaveData, WeaponDef } from './GameData';
 import { BeastsData } from '../data/BeastsData';
 import { MapsData } from '../data/MapsData';
 import { SkillsData } from '../data/SkillsData';
 import { WeaponsData } from '../data/WeaponsData';
+import { ArmorsData } from '../data/ArmorsData';
+import { ItemsData } from '../data/ItemsData';
 import { QuestsData } from '../data/QuestsData';
 import { EventBus, GEvent } from './EventBus';
 import { SaveManager } from './SaveManager';
@@ -33,6 +35,8 @@ export class GameManager {
     dex: string[] = [];                // 图鉴
     gold = 0;
     weaponId = 'wooden_sword';         // 当前武器(DQ式装备)
+    armorId = 'cloth_armor';           // 当前防具
+    items: string[] = [];              // 背包(物品id)
     attrPoints = 0;                    // 未分配的属性点(每次升级+3)
     questId: string | null = null;     // 当前主线任务
     questDone: string[] = [];          // 已完成任务
@@ -69,6 +73,8 @@ export class GameManager {
         this.dex = [];
         this.gold = 50;
         this.weaponId = 'wooden_sword';
+        this.armorId = 'cloth_armor';
+        this.items = [];
         this.attrPoints = 0;
         this.questId = 'q1_elder_errand';
         this.questDone = [];
@@ -88,6 +94,8 @@ export class GameManager {
             this.dex = data.dex;
             this.gold = data.gold;
             this.weaponId = data.weaponId || 'wooden_sword';
+            this.armorId = data.armorId || 'cloth_armor';
+            this.items = data.items || [];
             this.attrPoints = data.attrPoints || 0;
             this.questId = data.questId || null;
             this.questDone = data.questDone || [];
@@ -128,6 +136,8 @@ export class GameManager {
             dex: this.dex,
             gold: this.gold,
             weaponId: this.weaponId,
+            armorId: this.armorId,
+            items: this.items,
             attrPoints: this.attrPoints,
             questId: this.questId ?? undefined,
             questDone: this.questDone,
@@ -166,6 +176,75 @@ export class GameManager {
         return this.getWeapon().atkBonus;
     }
 
+    /** 购买防具:扣钱换装(DQ式装备成长) */
+    buyArmor(id: string): { ok: boolean; msg: string } {
+        const a = ArmorsData.get(id);
+        if (!a) return { ok: false, msg: '没有这件防具。' };
+        if (this.gold < a.price) return { ok: false, msg: `金币不足!(需 ${a.price})` };
+        this.gold -= a.price;
+        this.armorId = id;
+        EventBus.emit(GEvent.GOLD_CHANGED, this.gold);
+        return { ok: true, msg: `穿上「${a.name}」!防御 +${a.defBonus}` };
+    }
+
+    /** 当前防具 */
+    getArmor(): ArmorDef {
+        return ArmorsData.get(this.armorId);
+    }
+
+    /** 防具防御加成(叠加到战斗者 def) */
+    getArmorBonus(): number {
+        return this.getArmor().defBonus;
+    }
+
+    /** 获得物品(战斗掉落/奖励),stack 存多份 */
+    addItem(id: string, count = 1): void {
+        const def = ItemsData.get(id);
+        if (!def) return;
+        for (let i = 0; i < count; i++) this.items.push(id);
+    }
+
+    /** 背包里某物品数量 */
+    itemCount(id: string): number {
+        return this.items.filter(x => x === id).length;
+    }
+
+    /** 使用丹药(战斗外):回复HP/MP */
+    usePotion(id: string): { ok: boolean; msg: string } {
+        const def = ItemsData.get(id);
+        if (!def || def.type !== 'potion') return { ok: false, msg: '这不是可用的丹药。' };
+        const idx = this.items.indexOf(id);
+        if (idx < 0) return { ok: false, msg: '背包里没有这个丹药。' };
+        this.items.splice(idx, 1);
+        if (def.healHp) { this.player.hp = Math.min(this.player.maxHp, this.player.hp + def.healHp); }
+        if (def.healMp) { this.player.mp = Math.min(this.player.maxMp, this.player.mp + def.healMp); }
+        EventBus.emit(GEvent.PLAYER_HP_CHANGED);
+        return { ok: true, msg: `服下「${def.name}」!${def.healHp ? `HP +${def.healHp} ` : ''}${def.healMp ? `MP +${def.healMp}` : ''}` };
+    }
+
+    /** 炼金合成:消耗素材→丹药(重装机兵式掉落→合成循环) */
+    craftItem(recipeId: string): { ok: boolean; msg: string } {
+        const rc = ItemsData.recipes.find(r => r.id === recipeId);
+        if (!rc) return { ok: false, msg: '没有这个配方。' };
+        // 检查素材足够
+        for (const [matId, need] of rc.need) {
+            if (this.itemCount(matId) < need) {
+                const mat = ItemsData.get(matId);
+                return { ok: false, msg: `素材不足:还缺 ${mat?.name ?? matId} ×${need}` };
+            }
+        }
+        // 扣素材、给成品
+        for (const [matId, need] of rc.need) {
+            let left = need;
+            for (let i = this.items.length - 1; i >= 0 && left > 0; i--) {
+                if (this.items[i] === matId) { this.items.splice(i, 1); left--; }
+            }
+        }
+        const out = ItemsData.get(rc.out);
+        this.items.push(rc.out);
+        return { ok: true, msg: `炼制成功!获得「${out?.name ?? rc.out}」` };
+    }
+
     /** 旅店休息:扣金币+全队回满 */
     restAtInn(cost: number): { ok: boolean; msg: string } {
         if (this.gold < cost) return { ok: false, msg: `金币不足!(需 ${cost})` };
@@ -196,13 +275,14 @@ export class GameManager {
         return this.flags.has(flag);
     }
 
-    /** 战斗队伍:主角(含武器加成) + 随行异兽 */
+    /** 战斗队伍:主角(含武器攻击+防具防御加成) + 随行异兽 */
     getParty(): ActorStats[] {
         const list: ActorStats[] = [];
-        // 玩家用副本+武器加成(不污染存档数据)
+        // 玩家用副本+武器/防具加成(不污染存档数据)
         list.push({
             ...this.player,
             atk: this.player.atk + this.getWeaponBonus(),
+            def: this.player.def + this.getArmorBonus(),
             element: this.player.element || this.getWeapon().element || '金',
         });
         if (this.beast) list.push(this.beast);

@@ -2,6 +2,7 @@ import { _decorator, Color, Component, Graphics, input, Input, EventKeyboard, Ev
 import { ActorStats, FixedEncounterDef, SkillDef } from '../core/GameData';
 import { BeastsData } from '../data/BeastsData';
 import { SkillsData } from '../data/SkillsData';
+import { ItemsData } from '../data/ItemsData';
 import { GameManager, GameState } from '../core/GameManager';
 import { EventBus, GEvent } from '../core/EventBus';
 import { UIFactory } from '../ui/UIFactory';
@@ -123,6 +124,21 @@ export class BattleManager extends Component {
                     if (r.newSkill) {
                         const s = SkillsData.get(r.newSkill);
                         this.setMsg(`羁绊提升!${gm.beast?.name} 学会了「${s.name}」!`);
+                    }
+                }
+                // 素材掉落(经济循环:打怪→素材→出售/炼金),普通怪概率掉
+                const dropTable: [string, number][] = [
+                    ['beast_pelt', 0.5],   // 兽皮 50%
+                    ['beast_horn', 0.3],   // 兽角 30%
+                    ['beast_scale', 0.2],  // 鳞片 20%
+                    ['beast_bone', 0.1],   // 兽骨 10%
+                ];
+                for (const [matId, chance] of dropTable) {
+                    if (Math.random() < chance) {
+                        gm.addItem(matId);
+                        const mat = ItemsData.get(matId);
+                        this.setMsg(`获得素材:${mat?.name ?? matId}!`);
+                        break;  // 每场最多掉一个,保持简洁
                     }
                 }
             }

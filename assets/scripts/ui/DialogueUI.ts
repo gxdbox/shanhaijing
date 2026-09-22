@@ -235,6 +235,27 @@ export class DialogueUI extends Component {
                 this._flashMsg(r.msg, () => this.runActions(actions, i + 1));
                 break;
             }
+            case 'buyArmor': {
+                // 防具店:arg = 防具id,购买成功扣钱并换装
+                const rA = gm.buyArmor(arg);
+                if (rA.ok) gm.save();
+                this._flashMsg(rA.msg, () => this.runActions(actions, i + 1));
+                break;
+            }
+            case 'usePotion': {
+                // 使用丹药:arg = 物品id
+                const rP = gm.usePotion(arg);
+                if (rP.ok) gm.save();
+                this._flashMsg(rP.msg, () => this.runActions(actions, i + 1));
+                break;
+            }
+            case 'craftItem': {
+                // 炼金合成:arg = 配方id
+                const rC = gm.craftItem(arg);
+                if (rC.ok) gm.save();
+                this._flashMsg(rC.msg, () => this.runActions(actions, i + 1));
+                break;
+            }
             case 'restInn': {
                 // 旅店:arg = 价格,付钱回满血蓝
                 const cost = parseInt(arg, 10) || 20;

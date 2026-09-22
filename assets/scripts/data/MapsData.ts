@@ -61,6 +61,8 @@ export class MapsData {
             { id: 'shopkeeper', name: '铁匠', x: 2, y: 11, dir: 'down', dialogue: 'shopkeeper' },
             { id: 'innkeeper', name: '旅店老板', x: 20, y: 4, dir: 'down', dialogue: 'innkeeper' },
             { id: 'waypoint', name: '驿丞', x: 1, y: 14, dir: 'down', dialogue: 'waypoint' },
+            { id: 'armorer', name: '防具商', x: 5, y: 11, dir: 'down', dialogue: 'armorer' },
+            { id: 'alchemist', name: '炼金术士', x: 8, y: 13, dir: 'down', dialogue: 'alchemist' },
         ],
         portals: [
             { x: 10, y: 1, mapId: 'wild', tx: 13, ty: 16, dir: 'up' },

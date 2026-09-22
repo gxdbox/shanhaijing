@@ -283,11 +283,29 @@ export class DialogueData {
             ],
             choices: [
                 { text: '买青铜剑(80金,攻+4)', next: 'shop_bronze' },
-                { text: '买铁剑(220金,攻+10)', next: 'shop_iron' },
-                { text: '买玉剑(500金,攻+18)', next: 'shop_jade' },
+                { text: '买赤炎剑(180金,攻+8)', next: 'shop_fire' },
+                { text: '买玄铁重剑(260金,攻+12)', next: 'shop_iron' },
+                { text: '买青玉剑(500金,攻+18)', next: 'shop_jade' },
+                { text: '买碧水剑(800金,攻+24)', next: 'shop_water' },
                 { text: '买干将剑(1200金,攻+30)', next: 'shop_ganjiang' },
                 { text: '看看而已', next: '' },
             ],
+        },
+        shop_fire: {
+            id: 'shop_fire',
+            lines: [
+                { speaker: '铁匠', text: '赤炎剑!淬火兽血,火气逼人!' },
+            ],
+            actions: ['buyWeapon:fire_sword'],
+            next: 'shopkeeper_talk',
+        },
+        shop_water: {
+            id: 'shop_water',
+            lines: [
+                { speaker: '铁匠', text: '碧水剑!东海寒流锻造,剑身如水!' },
+            ],
+            actions: ['buyWeapon:water_sword'],
+            next: 'shopkeeper_talk',
         },
         shop_bronze: {
             id: 'shop_bronze',
@@ -369,6 +387,48 @@ export class DialogueData {
         wp_zhaoyao: { id: 'wp_zhaoyao', lines: [], actions: ['teleportTo:zhaoyao'], next: '' },
         wp_tianshan: { id: 'wp_tianshan', lines: [], actions: ['teleportTo:tianshan'], next: '' },
         wp_cave: { id: 'wp_cave', lines: [], actions: ['teleportTo:cave'], next: '' },
+
+        // ============ DQ式设施：防具店（M5）============
+        armorer_talk: {
+            id: 'armorer_talk',
+            lines: [
+                { speaker: '防具商', text: '远道而来的勇士!护体之甲,价有所值。皮甲、鳞甲、玄铁甲,任君挑选!' },
+            ],
+            choices: [
+                { text: '买皮甲(100金,防+3)', next: 'arm_armor1' },
+                { text: '买鳞甲(220金,防+6)', next: 'arm_armor2' },
+                { text: '买玄铁甲(450金,防+10)', next: 'arm_armor3' },
+                { text: '买玉鳞甲(800金,防+15)', next: 'arm_armor4' },
+                { text: '买龙鳞甲(1500金,防+22)', next: 'arm_armor5' },
+                { text: '先不买', next: '' },
+            ],
+        },
+        arm_armor1: { id: 'arm_armor1', lines: [{ speaker: '防具商', text: '皮甲,轻便坚韧!' }], actions: ['buyArmor:leather_armor'], next: 'armorer_talk' },
+        arm_armor2: { id: 'arm_armor2', lines: [{ speaker: '防具商', text: '鳞甲,旋龟鳞片所制!' }], actions: ['buyArmor:scale_armor'], next: 'armorer_talk' },
+        arm_armor3: { id: 'arm_armor3', lines: [{ speaker: '防具商', text: '玄铁甲,刀枪难入!' }], actions: ['buyArmor:iron_armor'], next: 'armorer_talk' },
+        arm_armor4: { id: 'arm_armor4', lines: [{ speaker: '防具商', text: '玉鳞甲,灵气护体!' }], actions: ['buyArmor:jade_armor'], next: 'armorer_talk' },
+        arm_armor5: { id: 'arm_armor5', lines: [{ speaker: '防具商', text: '龙鳞甲,传说级宝甲!' }], actions: ['buyArmor:dragon_armor'], next: 'armorer_talk' },
+
+        // ============ DQ式设施：炼金术士（M5）============
+        alchemist_talk: {
+            id: 'alchemist_talk',
+            lines: [
+                { speaker: '炼金术士', text: '山海万物,皆可入药。带素材来,我替你炼成灵丹!(兽皮/兽角/鳞片/兽骨)' },
+            ],
+            choices: [
+                { text: '炼回春丹(兽皮×2)', next: 'al_craft1' },
+                { text: '炼回灵丹(兽角×2)', next: 'al_craft2' },
+                { text: '炼续命丹(鳞片×2+兽骨×1)', next: 'al_craft3' },
+                { text: '服回春丹', next: 'al_potion1' },
+                { text: '服回灵丹', next: 'al_potion2' },
+                { text: '暂不炼药', next: '' },
+            ],
+        },
+        al_craft1: { id: 'al_craft1', lines: [{ speaker: '炼金术士', text: '回春丹,一颗下去容光焕发!' }], actions: ['craftItem:rc_herb'], next: 'alchemist_talk' },
+        al_craft2: { id: 'al_craft2', lines: [{ speaker: '炼金术士', text: '回灵丹,灵力骤升!' }], actions: ['craftItem:rc_spirit'], next: 'alchemist_talk' },
+        al_craft3: { id: 'al_craft3', lines: [{ speaker: '炼金术士', text: '续命丹,危急关头救命!' }], actions: ['craftItem:rc_revive'], next: 'alchemist_talk' },
+        al_potion1: { id: 'al_potion1', lines: [{ speaker: '炼金术士', text: '来,服下这颗回春丹。' }], actions: ['usePotion:herb_pill'], next: 'alchemist_talk' },
+        al_potion2: { id: 'al_potion2', lines: [{ speaker: '炼金术士', text: '来,服下这颗回灵丹。' }], actions: ['usePotion:spirit_pill'], next: 'alchemist_talk' },
     };
 
     /**
@@ -407,6 +467,12 @@ export class DialogueData {
         ],
         shopkeeper: [
             { node: 'shopkeeper_talk' },
+        ],
+        armorer: [
+            { node: 'armorer_talk' },
+        ],
+        alchemist: [
+            { node: 'alchemist_talk' },
         ],
         innkeeper: [
             { node: 'innkeeper_talk' },

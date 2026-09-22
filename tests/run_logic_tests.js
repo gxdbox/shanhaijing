@@ -194,5 +194,53 @@ gm7.recordKill('zhi');
 gm7.recordKill('zhi');
 ok('击杀计数=2', gm7.getBeastKillCount('zhi') === 2);
 
+
+// ===== 测试12：防具/素材/炼金(M5) =====
+const gm9 = new GameManager();
+gm9.newGame();
+ok('初始防具粗布衣', gm9.armorId === 'cloth_armor' && gm9.getArmorBonus() === 0);
+// 买防具
+gm9.gold = 500;
+let rA = gm9.buyArmor('scale_armor');
+ok('买鳞甲成功', rA.ok === true && gm9.armorId === 'scale_armor');
+ok('防具防御+6', gm9.getArmorBonus() === 6);
+ok('扣金币220 (500->' + gm9.gold + ')', gm9.gold === 280);
+rA = gm9.buyArmor('dragon_armor');
+ok('钱不够拒绝买龙鳞甲', rA.ok === false && gm9.armorId === 'scale_armor');
+// 战斗队伍防御加成生效
+gm9.gold = 2000;   // 给够钱买龙鳞甲(1500)
+gm9.buyArmor('dragon_armor');
+const party = gm9.getParty();
+ok('getParty防御含防具加成', party[0].def === gm9.player.def + 22);
+// 素材
+gm9.addItem('beast_pelt', 3);
+ok('素材兽皮×3', gm9.itemCount('beast_pelt') === 3);
+// 炼金:2兽皮→回春丹
+let rc = gm9.craftItem('rc_herb');
+ok('炼回春丹成功', rc.ok === true && gm9.itemCount('herb_pill') === 1);
+ok('消耗2兽皮(剩' + gm9.itemCount('beast_pelt') + ')', gm9.itemCount('beast_pelt') === 1);
+// 素材不足拒绝
+rc = gm9.craftItem('rc_spirit');
+ok('素材不足拒绝炼回灵丹', rc.ok === false && gm9.itemCount('spirit_pill') === 0);
+// 丹药使用
+gm9.player.hp = 10;
+gm9.player.mp = 10;
+const rP = gm9.usePotion('herb_pill');
+ok('服回春丹回100HP', rP.ok === true && gm9.player.hp === Math.min(gm9.player.maxHp, 110));
+ok('背包回春丹-1', gm9.itemCount('herb_pill') === 0);
+ok('没有丹药拒绝', gm9.usePotion('herb_pill').ok === false);
+// 存档含防具/背包
+gm9.save();   // 保存当前状态(dragon_armor)
+const savedM5 = JSON.parse(storage['shj_save_v1']);
+ok('存档含armorId', savedM5.armorId === 'dragon_armor');
+ok('存档含items', Array.isArray(savedM5.items));
+// 旧档兼容
+const legacyM5 = { player: gm9.player, beast: null, dex: [], gold: 100, flags: [], mapId: 'home', x: 1, y: 1, playTime: 0 };
+storage['shj_save_v1'] = JSON.stringify(legacyM5);
+const gm10 = new GameManager();
+gm10.start();
+ok('旧档防具默认粗布衣', gm10.armorId === 'cloth_armor');
+ok('旧档背包默认空', gm10.items.length === 0);
+
 console.log(`\n结果: ${pass} 通过, ${fail} 失败`);
 process.exit(fail > 0 ? 1 : 0);
