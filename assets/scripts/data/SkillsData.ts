@@ -365,6 +365,13 @@ export class SkillsData {
             type: 'magic', power: 2.2, mpCost: 20, target: 'allEnemies',
             learnBeast: 'sixiong',
         },
+        {
+            id: 'kaibi',
+            name: '开眼·闭眼',
+            desc: '烛龙开眼白昼、闭眼长夜,昼夜切换间天地变色!',
+            type: 'magic', power: 2.4, mpCost: 18, target: 'enemy',
+            learnBeast: 'zhulong',
+        },
         // ===== 二期：进化专属技(五行) =====
         {
             id: 'jinling_po',

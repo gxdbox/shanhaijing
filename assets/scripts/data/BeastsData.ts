@@ -320,6 +320,18 @@ export class BeastsData {
             element: '土',
             boss: true,
         },
+        {
+            id: 'zhulong',
+            name: '烛龙',
+            kind: '神',
+            quote: '钟山之神,名曰烛阴,视为昼,瞑为夜,吹为冬,呼为夏,不饮,不食,不息,息为风。身长千里。',
+            desc: '人面蛇身的赤红巨神,睁眼为昼、闭眼为夜,吹气为冬、呼气为夏,掌控昼夜与天象的守关之神。',
+            maxHp: 200, maxMp: 50, atk: 24, def: 16, spd: 8,
+            exp: 700, gold: 400,
+            tex: 'beasts/zhulong', skills: ['kaibi'],
+            element: '水',
+            boss: true,
+        },
     ];
 
     private static map = new Map<string, BeastDef>(

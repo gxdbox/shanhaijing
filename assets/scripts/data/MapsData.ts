@@ -189,6 +189,8 @@ export class MapsData {
             { x: 14, y: 9, beastIds: ['paoxiao'], once: true, winFlag: 'paoxiao_down' },
             // ===== 终极Boss:四凶合体(需穷奇+帝江+狍鸮全部击败,胜利即通关) =====
             { x: 12, y: 9, beastIds: ['sixiong'], once: true, flagKey: ['qiongqi_down', 'dijiang_down', 'paoxiao_down'], winFlag: ['sixiong_down', 'game_clear'] },
+            // ===== 隐藏Boss:烛龙(通关后出现,掌控昼夜的守关神) =====
+            { x: 2, y: 10, beastIds: ['zhulong'], once: true, flagKey: 'game_clear', winFlag: 'zhulong_down' },
         ],
         encounterRate: 0,
         pool: [],
